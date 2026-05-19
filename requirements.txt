@@ -1,0 +1,35 @@
+# ── Finance / Data collection ──────────────────────────────────────────────
+wrds                        # WRDS Python API (CCM + CRSP queries)
+yfinance                    # stock price fallback for 2025-2026
+huggingface_hub             # download FINSABER dataset
+datasets                    # HuggingFace datasets (FINSABER)
+
+# ── Core data ─────────────────────────────────────────────────────────────
+numpy
+pandas
+scipy
+pyarrow                     # parquet read/write
+tqdm                        # progress bars
+requests                    # EDGAR API calls
+
+# ── NLP / Transformers ─────────────────────────────────────────────────────
+transformers                # BERT, DAPT (Phase 2)
+sentence-transformers       # SBERT base model (Phase 3)
+accelerate                  # efficient training
+peft                        # LoRA adapters (Phase 3)
+tokenizers
+
+# ── Topic Modelling ────────────────────────────────────────────────────────
+bertopic                    # BERTopic (Phase 4)
+umap-learn                  # dimensionality reduction for BERTopic
+hdbscan                     # clustering for BERTopic
+
+# ── Evaluation / ML ───────────────────────────────────────────────────────
+scikit-learn                # Ridge regression, TF-IDF, metrics (Phase 5)
+
+# ── Experiment Tracking ───────────────────────────────────────────────────
+wandb                       # W&B perplexity tracking (Phase 2)
+
+# ── Visualisation ─────────────────────────────────────────────────────────
+matplotlib
+seaborn

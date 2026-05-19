@@ -1,0 +1,16 @@
+# Datasets — stored on HuggingFace, not git
+datasets/
+*.csv
+*.parquet
+*.pickle
+*.tar.gz
+*.gz
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# VSCode
+.vscode/
+
