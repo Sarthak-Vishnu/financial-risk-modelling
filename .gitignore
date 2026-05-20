@@ -6,6 +6,10 @@ datasets/
 *.tar.gz
 *.gz
 
+logs/
+dapt_data/
+dapt_checkpoints/
+
 # Python
 __pycache__/
 *.pyc
