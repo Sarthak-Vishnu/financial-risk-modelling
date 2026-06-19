@@ -9,6 +9,17 @@
 
 ---
 
+> ### ⚙️ Implementation notes for a coding agent (read first)
+>
+> This is a **rationale / literature** document, not a spec. Before implementing against it:
+>
+> 1. **Compute corpus statistics from the real data — do not hardcode the numbers in this file.** Figures such as "~8,105 filings", "~110,000 chunks", "median ~7k words", and "5–12% token loss" are illustrative estimates, not measured values. Derive actuals from the corpus.
+> 2. **Verify `max_seq_length` before assuming 512.** `all-mpnet-base-v2`'s `sentence-transformers` config ships with **`max_seq_length = 384`** by default, even though the underlying MPNet supports 512. For DAPT/MLM, load the base MPNet and set the max length explicitly (510 usable tokens after the 2 special tokens). Confirm the active value at runtime rather than assuming.
+> 3. **Block-quoted RoBERTa passages are paraphrased**, not verified verbatim — use them for direction, do not reproduce as exact quotations.
+> 4. **Scope:** this file covers Phase 2 (DAPT chunking) only. Phase 3 (contrastive fine-tuning) is in `Literature_agent_phase3.md`.
+
+---
+
 ## Q1. Does input segmentation strategy materially affect MLM / DAPT quality?
 
 **Answer: Yes — RoBERTa provides the definitive empirical evidence.**
@@ -251,7 +262,7 @@ The one optional extension worth considering: **explicit paragraph-boundary rese
 
 > **Stage distinction:** Chiu et al. (2025) and Jehnen et al. (2026) both use short (sentence/paragraph-level) inputs for their **fine-tuning/embedding** stage, not for MLM pre-training. This is consistent with your two-stage design: greedy-packed 512-token chunks during DAPT → sentence/paragraph-level inputs during SimCSE contrastive fine-tuning. The two stages have different optimal segmentation strategies, and the recent literature confirms both.
 
-> **Note:** SEC-BERT arXiv number (2203.06482) and LREC venue should be verified against the actual paper before citing in the dissertation.
+> **Note (resolved):** arXiv:2203.06482 is **Loukas et al. (2022), *FiNER: Financial Numeric Entity Recognition for XBRL Tagging*, ACL 2022** — the paper that *introduces and releases* the SEC-BERT family (SEC-BERT-BASE / -NUM / -SHAPE). Cite it as FiNER (ACL 2022), not "SEC-BERT (LREC)". Confirmed via Chiu et al. (2025) reference list. See `Literature_agent_phase3.md` Q2 for the SEC-BERT-NUM number-normalization detail.
 
 ---
 
