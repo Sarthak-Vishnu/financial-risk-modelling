@@ -13,19 +13,34 @@ Continued MLM pretraining of `sentence-transformers/all-mpnet-base-v2` on the It
 | `chunk_corpus.py` | Chunks Item 1A pickles into MLM-ready sequences; outputs `dapt_data/train.jsonl` and `dapt_data/val.jsonl` |
 | `train_dapt.py` | Continued MLM training with HuggingFace Trainer; saves best checkpoint on val loss |
 | `eval_perplexity.py` | Evaluates MLM perplexity of any checkpoint on the val set |
-| `run_dapt.sh` | SLURM batch job script for the teaching cluster |
+| `chunk_stats.py` | Reports fill-rate stats (tokens/chunk) for a chunked JSONL |
+| `run_dapt.sh` | SLURM batch job script (sentence-aware chunking) |
+| `run_dapt_para.sh` | SLURM batch job script (paragraph-aware chunking variant) |
 
 ---
 
 ## Chunking Strategy
 
-**Sentence-boundary-aware packing** (NLTK `sent_tokenize` → greedily pack sentences up to 510 tokens).
+Both strategies are within-document, non-overlapping greedy packing to ≤510 tokens (RoBERTa
+DOC-SENTENCES family, validated by the literature survey — see `../Literature_agent.md`). Item 1A
+sections are long regulatory prose (median ~7k words, max ~18k words); fixed-window chunking would
+split mid-concept, creating noisy MLM examples, so neither strategy uses it.
 
-Item 1A sections are long regulatory prose (median ~7k words, max ~18k words). Sentence packing preserves paragraph-level semantic coherence — fixed-window chunking would split mid-concept, creating noisy MLM training examples for legal/financial text.
+- **Sentence-aware** (`sentence_pack`, default): NLTK `sent_tokenize` → greedily pack whole sentences
+  to 510 tokens. Single sentences >510 tokens fall back to a fixed token window.
+- **Paragraph-aware** (`paragraph_pack`, `--paragraph_aware`): greedily pack whole *paragraphs*
+  (`\n\n` split = one Item 1A risk factor) to 510 tokens, so chunk boundaries always land on risk-factor
+  edges and no risk factor is ever split across chunks. A paragraph >510 tokens falls back to sentence packing.
 
-Single sentences exceeding 510 tokens are split by fixed token window as a fallback.
+**Selected: paragraph-aware.** An A/B comparison (`CHUNKING_COMPARISON.md`) showed paragraph-aware
+achieves lower val perplexity on the identical val set (2.2278 vs 2.2671, −1.7%) despite ~18% lower
+fill-rate, and its "never split a risk factor" property aligns with the downstream BERTopic stage.
+The paragraph-aware checkpoint (`dapt_checkpoints_para/best`) is the encoder base for Phase 3; the
+sentence-aware checkpoint is retained for a possible Phase 5 chunking ablation. See
+`CHUNKING_COMPARISON.md` for the full numbers and caveats (notably a ~22% training-step confound).
 
-**Result:** 165,337 train sequences, 11,765 val sequences from 8,017 filings (230 skipped — no feature_table match).
+**Result (sentence-aware):** 165,337 train / 11,765 val sequences from 8,017 filings (230 skipped — no feature_table match).
+**Result (paragraph-aware):** 201,513 train sequences.
 
 ---
 
@@ -77,17 +92,22 @@ Hence, the checkpoint at epoch 5 is sufficient. If the downstream Phase 5 ablati
 
 ## Results
 
+Perplexity on the common val set (`dapt_data/val.jsonl`):
+
 | Model | Val Perplexity | Notes |
 |-------|----------------|-------|
 | `sentence-transformers/all-mpnet-base-v2` (randomly initialised MLM head) | 946,018.79 | Actual training start point — MLM head absent in sentence-transformer variant, initialised from random weights |
 | `microsoft/mpnet-base` (general English MLM head) | 2.6669 | Comparison baseline — pre-trained MLM head on general English |
-| `dapt_checkpoints/best` (post-DAPT, epoch 5) | **2.2660** | After continued MLM on Item 1A corpus |
+| `dapt_checkpoints/best` — sentence-aware DAPT, epoch 5 | 2.2671 | Continued MLM on sentence-packed Item 1A corpus |
+| `dapt_checkpoints_para/best` — paragraph-aware DAPT, epoch 5 | **2.2278** | **Selected encoder base for Phase 3** (see `CHUNKING_COMPARISON.md`) |
 
-> **Note for supervisor:** `microsoft/mpnet-base` (2.67) is the intended comparison baseline (general English vs. financial domain, same architecture). `all-mpnet-base-v2` (946k) is the literal training start point but not a meaningful MLM baseline since its head was random. Confirm which to report.
+**~16.5% perplexity reduction** over `mpnet-base` (paragraph-aware). Val perplexity decreased monotonically across all 5 epochs in both runs, satisfying the IPP Phase 2 success criterion.
 
-**14.8% perplexity reduction** over `mpnet-base`. Val perplexity decreased monotonically across all 5 epochs, satisfying the IPP Phase 2 success criterion.
+Best checkpoint: **`dapt_checkpoints_para/best/`** — used as the encoder base for Phase 3 (Contrastive FT). The sentence-aware checkpoint `dapt_checkpoints/best/` is retained for a possible Phase 5 chunking ablation.
 
-Best checkpoint: `dapt_checkpoints/best/` — used as the encoder base for Phase 3 (Contrastive FT).
+> **⚠️ Flag for supervisor discussion (Phase 2):**
+> 1. **Chunking choice.** Paragraph-aware packing (never splits an Item 1A risk factor) was selected over sentence-aware on a −1.7% val-perplexity edge (2.2278 vs 2.2671). The margin is small and confounded by ~22% more training steps (paragraph-aware yields 201k vs 165k chunks at fixed 5 epochs). Confirm whether this is an acceptable basis to commit to paragraph-aware for Phase 3, or whether a step-matched re-run / deferral to the Phase 5 downstream comparison is preferred. Full analysis + caveats in `CHUNKING_COMPARISON.md`.
+> 2. **Perplexity baseline.** `microsoft/mpnet-base` (2.67) is the intended comparison baseline (general English vs. financial domain, same architecture). `all-mpnet-base-v2` (946k) is the literal training start point but not a meaningful MLM baseline since its head was random. Confirm which to report in the dissertation.
 
 ---
 

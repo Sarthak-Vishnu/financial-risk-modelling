@@ -9,6 +9,8 @@ datasets/
 logs/
 dapt_data/
 dapt_checkpoints/
+dapt_data_para/
+dapt_checkpoints_para/
 
 # Python
 __pycache__/

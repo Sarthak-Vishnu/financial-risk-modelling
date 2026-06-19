@@ -1,19 +1,28 @@
 """
 Phase 2 — Step 1: Chunk Item 1A corpus into MLM-ready sequences.
 
-Reads sp500_1A pickle files, splits text into sentence-boundary-aware
-chunks of ≤510 tokens, and writes train/val JSONL files.
+Reads sp500_1A pickle files, splits text into ≤510-token chunks, and writes
+train/val JSONL files. Two packing strategies (both within-document,
+non-overlapping — i.e. RoBERTa DOC-SENTENCES):
+
+  - sentence-aware (default): greedily pack whole sentences up to 510 tokens.
+  - paragraph-aware (--paragraph_aware): greedily pack whole *paragraphs*
+    (Item 1A risk factors, split on blank lines) up to 510 tokens, so chunk
+    boundaries always fall on paragraph edges; a paragraph that alone exceeds
+    510 tokens falls back to sentence packing.
 
 Output:
-    dapt_data/train.jsonl  — filing_date < 2025-01-01
-    dapt_data/val.jsonl    — 2025-01-01 ≤ filing_date < 2026-01-01
+    <out_dir>/train.jsonl  — filing_date < 2025-01-01
+    <out_dir>/val.jsonl    — 2025-01-01 ≤ filing_date < 2026-01-01
 
 Each line: {"text": "..."}
 
 Usage:
-    python dapt/chunk_corpus.py
+    python dapt/chunk_corpus.py                                    # sentence-aware -> dapt_data/
+    python dapt/chunk_corpus.py --paragraph_aware --out_dir dapt_data_para
 """
 
+import argparse
 import json
 import os
 import pickle
@@ -67,6 +76,43 @@ def sentence_pack(text: str, tokenizer, max_tokens: int = MAX_TOKENS) -> list[st
     return [c.strip() for c in chunks if c.strip()]
 
 
+def paragraph_split(text: str) -> list[str]:
+    """Split text into paragraphs on blank lines (one Item 1A risk factor each)."""
+    return [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+
+
+def paragraph_pack(text: str, tokenizer, max_tokens: int = MAX_TOKENS) -> list[str]:
+    """Pack whole paragraphs greedily into chunks of at most max_tokens tokens.
+
+    Chunk boundaries always fall on paragraph edges. A single paragraph longer
+    than max_tokens is flushed and then sentence-packed as a fallback.
+    """
+    chunks = []
+    current: list[str] = []
+    current_len = 0
+
+    for para in paragraph_split(text):
+        para_len = len(tokenizer.encode(para, add_special_tokens=False))
+
+        if para_len > max_tokens:
+            # Paragraph itself exceeds limit — flush buffer then sentence-pack it
+            if current:
+                chunks.append(" ".join(current))
+                current, current_len = [], 0
+            chunks.extend(sentence_pack(para, tokenizer, max_tokens))
+        elif current_len + para_len > max_tokens:
+            chunks.append(" ".join(current))
+            current, current_len = [para], para_len
+        else:
+            current.append(para)
+            current_len += para_len
+
+    if current:
+        chunks.append(" ".join(current))
+
+    return [c.strip() for c in chunks if c.strip()]
+
+
 def parse_filename(fname: str):
     """Extract (ticker, year) from '{TICKER}_{YEAR}.pickle'."""
     m = re.match(r"^(.+)_(\d{4})\.pickle$", fname)
@@ -75,8 +121,22 @@ def parse_filename(fname: str):
     return m.group(1), int(m.group(2))
 
 
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--out_dir", type=str, default=str(OUT_DIR),
+                   help="Output directory for train.jsonl / val.jsonl")
+    p.add_argument("--paragraph_aware", action="store_true", default=False,
+                   help="Pack whole paragraphs (Item 1A risk factors) instead of sentences")
+    return p.parse_args()
+
+
 def main():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    args = parse_args()
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    pack_fn = paragraph_pack if args.paragraph_aware else sentence_pack
+    print(f"Packing strategy: {'paragraph-aware' if args.paragraph_aware else 'sentence-aware'}")
 
     print("Loading feature table...")
     ft = pd.read_parquet(FEATURE_TABLE)
@@ -93,8 +153,8 @@ def main():
     files = sorted(SP500_DIR.glob("*.pickle"))
     print(f"Processing {len(files)} pickle files...")
 
-    train_path = OUT_DIR / "train.jsonl"
-    val_path = OUT_DIR / "val.jsonl"
+    train_path = out_dir / "train.jsonl"
+    val_path = out_dir / "val.jsonl"
     skipped = []
 
     train_chunks = val_chunks = 0
@@ -124,7 +184,7 @@ def main():
                 skipped.append(fpath.name)
                 continue
 
-            chunks = sentence_pack(text, tokenizer)
+            chunks = pack_fn(text, tokenizer)
 
             out_file = f_val if is_val else f_train
             for chunk in chunks:
@@ -141,7 +201,7 @@ def main():
     print(f"  Skipped files   : {len(skipped)}")
     if skipped:
         print(f"  First 10 skipped: {skipped[:10]}")
-    print(f"  Output -> {OUT_DIR}")
+    print(f"  Output -> {out_dir}")
 
 
 if __name__ == "__main__":

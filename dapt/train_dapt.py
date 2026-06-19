@@ -52,6 +52,10 @@ def parse_args():
                    help="Truncate val set to N samples (smoke test)")
     p.add_argument("--resume_from_checkpoint", type=str, default=None,
                    help="Path to a checkpoint to resume from")
+    p.add_argument("--data_dir", type=str, default=str(DATA_DIR),
+                   help="Directory containing train.jsonl / val.jsonl")
+    p.add_argument("--checkpoint_dir", type=str, default=str(CHECKPOINT_DIR),
+                   help="Directory to write checkpoints and best/ to")
     return p.parse_args()
 
 
@@ -66,6 +70,8 @@ def tokenize_fn(examples, tokenizer):
 
 def main():
     args = parse_args()
+    data_dir = Path(args.data_dir)
+    checkpoint_dir = Path(args.checkpoint_dir)
 
     use_wandb = bool(os.environ.get("WANDB_API_KEY"))
     report_to = "wandb" if use_wandb else "none"
@@ -81,8 +87,8 @@ def main():
     raw = load_dataset(
         "json",
         data_files={
-            "train": str(DATA_DIR / "train.jsonl"),
-            "validation": str(DATA_DIR / "val.jsonl"),
+            "train": str(data_dir / "train.jsonl"),
+            "validation": str(data_dir / "val.jsonl"),
         },
     )
 
@@ -105,14 +111,14 @@ def main():
         mlm_probability=args.mlm_prob,
     )
 
-    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     steps_per_epoch = math.ceil(len(tokenized["train"]) / (args.batch_size * args.grad_accum))
     total_steps = steps_per_epoch * args.epochs
     warmup_steps = max(1, round(total_steps * args.warmup_ratio))
 
     training_args = TrainingArguments(
-        output_dir=str(CHECKPOINT_DIR),
+        output_dir=str(checkpoint_dir),
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
@@ -146,7 +152,7 @@ def main():
     trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
 
     # Save best model to a fixed 'best/' directory for easy reference
-    best_dir = CHECKPOINT_DIR / "best"
+    best_dir = checkpoint_dir / "best"
     trainer.save_model(str(best_dir))
     tokenizer.save_pretrained(str(best_dir))
 
