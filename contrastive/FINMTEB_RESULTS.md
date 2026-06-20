@@ -2,11 +2,35 @@
 
 Intrinsic (zero-shot) evaluation of the Phase 3 encoders on **FinMTEB** (Tang & Yang 2025),
 English subset: **2 STS tasks** (Spearman ρ) + **10 Retrieval tasks** (NDCG@10). Run via
-`contrastive/eval_finmteb.py` (env `finmteb`, job 3511784, ~49 min on an A6000).
+`contrastive/eval_finmteb.py` (env `finmteb`, job 3511784, ~49 min on an A6000). The benchmark *was*
+run — only the optional 7B `Fin-E5` baseline and the Chinese tasks were skipped.
 
 > **Read the two metrics separately.** The per-model `MEAN` in `eval_results/finmteb/summary.json`
 > averages Spearman and NDCG@10 together and is therefore *not* a meaningful single score. The tables
 > below split them.
+
+## How to read this (plain-English)
+
+**Verdict: a healthy, expected result — nothing here says redo a step.** Read it as a story across the
+pipeline, not a race against SBERT. Of the 5 models, only 3 are ours (`dual`, `three`, `three_lora`);
+`sbert` is a generic off-the-shelf yardstick and `dapt` is our own halfway point (after Phase 2, before
+Phase 3).
+
+- **Expected & good:** DAPT raises in-domain similarity (STS) but lowers search (retrieval) — the
+  textbook MLM "anisotropy" side effect, not a failure. Then **contrastive FT repairs retrieval**
+  (~0.33 → ~0.50), which is exactly Phase 3's job. *This is the main "proceed" signal.*
+- **Unexpectedly good:** LoRA (`three_lora`), added as an exploratory variant, came out best of our
+  three encoders on **both** axes.
+- **Mildly disappointing:** adding the novel **sector view under full fine-tuning hurt** (`three` <
+  `dual`) — but under LoRA it didn't. Cause is diagnosed below (noisy positives), and it's a cheap fix.
+- **Looks bad, is fine:** SBERT leading overall retrieval. It was contrastively trained on 1B+ pairs for
+  retrieval, and FinMTEB's retrieval tasks (generic finance QA / 10-K / news) are **out-of-distribution**
+  for our SEC Item-1A risk-factor specialization. **Can't be helped, and need not be:** per the
+  supervisor's framing (`Feedback01_from_Sunnie.md`), the project is a *volatility-prediction benchmark*
+  (Phase 5); FinMTEB is supporting evidence, not the deliverable. Beating SBERT here is **not** a goal.
+
+**Decisive test = Phase 5** (forward-looking 30-day volatility from risk factors), where SBERT is just
+one Tier-3 baseline and in-domain geometry should pay off.
 
 ## Models
 
@@ -54,6 +78,31 @@ on *both* axes (0.410 STS / 0.502 retrieval). Full-FT `three` (0.337 / 0.419) is
 (0.406 / 0.497) — adding the sector view under full fine-tuning caused forgetting. Under LoRA the same
 view does no harm (≈ dual). Directly answers **Sunnie Action Item 4** (marginal value of the sector
 view): **negative under full fine-tuning, neutral-to-positive under LoRA's low-rank regularization.**
+
+## Sector-view investigation — why it hurt under full fine-tuning
+
+The drop from `dual` to `three` traces to **pair construction, not training**. `build_sector`
+(`build_pairs.py:139`) pairs two paragraphs from different firms in the same `(sic2, fiscal_year)`
+**at random, with no similarity filter** — unlike `build_chrono` (`build_pairs.py:115`), which keeps
+only TF-IDF cosine ≥ 0.5 matches. Measured intra-pair TF-IDF cosine on a 4k-pair sample per view:
+
+| view | mean | median | % pairs < 0.15 (near-unrelated) |
+|---|---|---|---|
+| chrono | 0.860 | 0.892 | 0% |
+| lexical | 0.561 | 0.571 | 5% |
+| **sector** | **0.245** | **0.190** | **38%** |
+
+**38% of sector "positives" are essentially unrelated text** (median similarity 0.19). The model is told
+to pull genuinely different paragraphs together a third of the time — a noisy supervision signal. Under
+**full fine-tuning** that pressure propagates through all weights and blurs the fine-grained geometry
+retrieval needs (`three` < `dual`). Under **LoRA**, updates are confined to low-rank Q/V adapters, so the
+noisy signal can't distort the geometry much (`three_lora` ≈ `dual`). Corroborated by training: `three`'s
+best val accuracy was **0.727** vs `dual`'s **0.899** — the model genuinely couldn't fit the sector pairs.
+
+**Decision (this round): document & proceed** — all 5 encoders are carried into Phase 5, which is the true
+judge of the sector view. If it underperforms there, the cheap fix is a TF-IDF similarity floor on
+`build_sector` (mirroring `build_chrono`) and/or lowering `--lambda_sector`; a "masking-only" sector
+variant (use sector membership solely for false-negative masking, not as a positive) is the alternative.
 
 ## Caveat — why SBERT still leads on retrieval
 
