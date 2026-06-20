@@ -11,6 +11,8 @@ dapt_data/
 dapt_checkpoints/
 dapt_data_para/
 dapt_checkpoints_para/
+contrastive/pairs/
+contrastive_checkpoints/
 
 # Python
 __pycache__/
@@ -20,3 +22,4 @@ __pycache__/
 # VSCode
 .vscode/
 
+eval_results/
