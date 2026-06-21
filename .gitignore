@@ -13,6 +13,11 @@ dapt_data_para/
 dapt_checkpoints_para/
 contrastive/pairs/
 contrastive_checkpoints/
+topics/data/
+topics/models/
+topics/out/
+baselines/out/
+phase5/out/
 
 # Python
 __pycache__/
