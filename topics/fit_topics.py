@@ -100,28 +100,41 @@ def build_topic_model(min_cluster_size, seed):
                     vectorizer_model=vectorizer, calculate_probabilities=False, verbose=True)
 
 
-def coherence_and_diversity(topic_model, train_texts):
-    """C_v coherence (gensim) + topic diversity over top-N words, on non-outlier topics."""
+def coherence_and_diversity(topic_model, train_texts, max_ref_docs=30000, seed=42):
+    """C_v coherence (gensim) + topic diversity over top-N words, on non-outlier topics.
+
+    Robustness: the reference corpus is subsampled (c_v's sliding-window NPMI is the long pole and
+    scales with corpus size, with negligible accuracy change) and CoherenceModel runs with
+    processes=1 — gensim's multiprocessing path can DEADLOCK on some cluster setups (it stalled a
+    48h job for ~5h). Wrapped so a coherence failure never costs us the topic deliverables."""
     from gensim.corpora import Dictionary
     from gensim.models.coherencemodel import CoherenceModel
 
     topic_ids = [t for t in topic_model.get_topics() if t != -1]
     topic_words = [[w for w, _ in topic_model.get_topic(t)[:TOP_N]] for t in topic_ids]
     topic_words = [tw for tw in topic_words if len(tw) >= 2]
-    if len(topic_words) < 2:
-        return float("nan"), float("nan")
-
-    # tokenize with the SAME analyzer used for c-TF-IDF so bigram topic words align
-    analyzer = topic_model.vectorizer_model.build_analyzer()
-    tokens = [analyzer(doc) for doc in train_texts]
-    dictionary = Dictionary(tokens)
-    cm = CoherenceModel(topics=topic_words, texts=tokens, dictionary=dictionary,
-                        coherence="c_v", topn=TOP_N)
-    c_v = cm.get_coherence()
-
     flat = [w for tw in topic_words for w in tw]
     diversity = len(set(flat)) / len(flat) if flat else float("nan")
-    return float(c_v), float(diversity)
+    if len(topic_words) < 2:
+        return float("nan"), diversity
+
+    try:
+        ref = train_texts
+        if len(ref) > max_ref_docs:
+            rng = np.random.default_rng(seed)
+            idx = rng.choice(len(ref), max_ref_docs, replace=False)
+            ref = [ref[i] for i in idx]
+        # tokenize with the SAME analyzer used for c-TF-IDF so bigram topic words align
+        analyzer = topic_model.vectorizer_model.build_analyzer()
+        tokens = [analyzer(doc) for doc in ref]
+        dictionary = Dictionary(tokens)
+        cm = CoherenceModel(topics=topic_words, texts=tokens, dictionary=dictionary,
+                            coherence="c_v", topn=TOP_N, processes=1)
+        c_v = float(cm.get_coherence())
+    except Exception as e:
+        print(f"  [coherence] skipped ({type(e).__name__}: {e})", flush=True)
+        c_v = float("nan")
+    return c_v, float(diversity)
 
 
 def filing_vectors(df, topics):
@@ -186,20 +199,23 @@ def main():
             topics[~is_train] = other_t
 
         n_topics = len([t for t in topic_model.get_topics() if t != -1])
-        c_v, diversity = coherence_and_diversity(topic_model, train_texts)
-        print(f"  [{enc}] topics={n_topics} C_v={c_v:.4f} diversity={diversity:.4f}", flush=True)
 
-        # save model + topic table
+        # --- write the DELIVERABLES first (model + topic table + filing vectors) so an expensive
+        #     coherence step can never cost us the Phase-5 inputs ---
         mdir = model_root / enc
         topic_model.save(str(mdir), serialization="safetensors",
                          save_ctfidf=True, save_embedding_model=False)
         info = topic_model.get_topic_info()
         info.to_csv(out_dir / f"topics_{enc}.csv", index=False)
 
-        # per-filing exposure vectors
         fv, pos = filing_vectors(df, topics)
         fv.to_parquet(out_dir / f"filing_topic_vectors_{enc}.parquet", index=False)
-        print(f"  [{enc}] filing vectors: {fv.shape[0]:,} filings x {len(pos)} topics", flush=True)
+        print(f"  [{enc}] topics={n_topics} | filing vectors: {fv.shape[0]:,} x {len(pos)} "
+              f"(saved) — computing coherence...", flush=True)
+
+        # --- now the optional quality metric (subsampled, single-process, failure-safe) ---
+        c_v, diversity = coherence_and_diversity(topic_model, train_texts, seed=args.seed)
+        print(f"  [{enc}] C_v={c_v:.4f} diversity={diversity:.4f}", flush=True)
 
         quality[enc] = {"n_topics": n_topics, "c_v": c_v, "diversity": diversity,
                         "min_cluster_size": args.min_cluster_size, "nr_topics": args.nr_topics}
