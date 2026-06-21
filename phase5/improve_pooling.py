@@ -47,7 +47,8 @@ def main():
     print(f"FLOOR  TF-IDF+lagged   IC={f['spearman']:.3f}  R2={f['r2_log']:.3f}  (val-2025, n={len(ev)})\n")
     print(f"{'encoder':11s} {'pool':13s} {'enc-only IC':>11s} {'enc R2':>7s} | {'full IC':>7s} {'full R2':>7s}")
 
-    encoders = [e for e in ["sbert", "dual", "three_lora"] if (E.TOPIC_OUT / f"emb_{e}.npy").exists()]
+    encoders = [e for e in ["sbert", "dual", "three_lora", "ftvol"]
+                if (E.TOPIC_OUT / f"emb_{e}.npy").exists()]
     for enc in encoders:
         topic = E.topic_filings(enc)
         tcols = [c for c in topic.columns if c.startswith("t") and c[1:].isdigit()] if topic is not None else []
