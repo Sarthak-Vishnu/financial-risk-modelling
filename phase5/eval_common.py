@@ -198,6 +198,22 @@ def call_matrix(df):
     return merged[cols].to_numpy(dtype=float), cols
 
 
+CHANGE_FEATURES = ROOT / "datasets" / f"change_features{CACHE_SUFFIX}.parquet"
+
+
+def change_matrix(df):
+    """Merge disclosure-change features (build_change_features.py) onto panel rows by
+    (ticker, fiscal_year). Backward-looking (this filing vs the firm's previous one) ->
+    leakage-free, valid in the backtest. Returns (None, []) if not built."""
+    if not CHANGE_FEATURES.exists():
+        return None, []
+    cf = pd.read_parquet(CHANGE_FEATURES)
+    cols = [c for c in cf.columns if c.startswith("chg_")]
+    merged = df[["ticker", "fiscal_year"]].merge(cf[["ticker", "fiscal_year"] + cols],
+                                                 on=["ticker", "fiscal_year"], how="left")
+    return merged[cols].to_numpy(dtype=float), cols
+
+
 def make_imputed_ridge():
     """Ridge for dense numeric blocks that may contain NaN: median-impute (fit on train) -> scale -> RidgeCV."""
     from sklearn.pipeline import make_pipeline
