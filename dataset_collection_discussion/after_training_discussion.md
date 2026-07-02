@@ -25,6 +25,20 @@ Both came out of the post-training evidence and override the instincts in the or
 > **re-training is on the table**: re-doing DAPT / contrastive with new data is a live option whenever a pilot
 > says it pays. Decisions here are **benefit-driven (pilot-gated), not cost-avoidant**.
 
+> **UPDATE 2026-06-22 — earnings calls flipped from "strategic bet / not pilotable" to "collect (gate-confirmed)."**
+> This memo originally judged earnings-call *tone value* unmeasurable at 1 year (only a "thin scalar pilot").
+> That turned out to be too pessimistic. The 2025 calls postdate the 10-Ks (can't match at filing level), but
+> we settled the question **call-anchored** instead: predict the 30-day vol *after each call*, computing the
+> full structured block at the call date. Result (`phase5/call_combined_gate.py`, HGB, leave-one-quarter-out,
+> n=152): **call tone adds +0.039 IC on top of the structured baseline (0.555 → 0.594)** — about the same as
+> the +0.041 the 10-K text adds in the main ladder. The signal is in the *interaction* (it adds nothing vs
+> persistence *alone*), which is why the original "scalar-only / marginal-R²" framing missed it. Caveat:
+> single regime, suggestive not significant. **Decision: collect the 406 pre-filing 2025 calls**
+> (`dataset_collection_discussion/calls_collection_spec_2025.md`), confirm at the filing level, and **only
+> then** commit to the 2008/2006–2024 backfill described in the rows below. The "strategic bet / re-training"
+> rows below still stand for the *DAPT-corpus* value (which genuinely needs scale) and the 4th contrastive
+> view — what changed is that **call-tone is now an evidence-backed collect, not a blind bet.**
+
 **Rule 1 — Temporal-coverage gating (a pilot-design constraint).** Phase 5 fits its prediction head on
 **train = 2006–2024** and scores **val = 2025**. *A feature that does not cover the train period cannot have a
 coefficient learned for it on the main split.* This does **not** mean a 1-year signal is useless — it means

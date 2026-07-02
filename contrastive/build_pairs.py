@@ -98,6 +98,8 @@ def _rec(view, a_text, p_text, a, p):
         "anchor_firm": a["ticker"], "positive_firm": p["ticker"],
         "anchor_sic2": a["sic2"], "positive_sic2": p["sic2"],
         "anchor_fy": a["fiscal_year"], "positive_fy": p["fiscal_year"],
+        # volatility bucket (within-year fwd-vol decile, e.g. "2014_7"); None for filings w/o a label.
+        "anchor_vb": a.get("vol_bucket"), "positive_vb": p.get("vol_bucket"),
     }
 
 
@@ -162,6 +164,36 @@ def build_sector(units, rng, pairs_per_group):
     return pairs
 
 
+def build_vol_bucket(units, rng, pairs_per_group):
+    """Volatility-aware positives: two paragraphs from DIFFERENT firms in the SAME within-year
+    forward-vol decile. Pulls same-volatility filings together -> embeddings become vol-discriminative.
+    Units without a vol_bucket (no label) are skipped. The bucket id is also the masking label."""
+    by_group = defaultdict(list)
+    for u in units:
+        if u.get("vol_bucket") is None:
+            continue
+        by_group[u["vol_bucket"]].append(u)
+    pairs = []
+    for vb, group in by_group.items():
+        by_firm = defaultdict(list)
+        for u in group:
+            by_firm[u["ticker"]].append(u)
+        firms = list(by_firm)
+        if len(firms) < 2:
+            continue
+        seen, attempts = set(), 0
+        while len(seen) < pairs_per_group and attempts < pairs_per_group * 5:
+            attempts += 1
+            f1, f2 = rng.sample(firms, 2)
+            u1, u2 = rng.choice(by_firm[f1]), rng.choice(by_firm[f2])
+            key = (u1["uid"], u2["uid"])
+            if key in seen:
+                continue
+            seen.add(key)
+            pairs.append(_rec("vol", u1["text"], u2["text"], u1, u2))
+    return pairs
+
+
 # --- main --------------------------------------------------------------------
 def parse_args():
     p = argparse.ArgumentParser()
@@ -171,6 +203,9 @@ def parse_args():
     p.add_argument("--min_lexical_words", type=int, default=24, help="Min words to form a lexical pair")
     p.add_argument("--chrono_sim_threshold", type=float, default=0.5, help="TF-IDF cosine to match risk factors")
     p.add_argument("--sector_pairs_per_group", type=int, default=50)
+    p.add_argument("--vol_pairs_per_group", type=int, default=50,
+                   help="Cross-firm positive pairs per within-year vol decile (volatility-aware view)")
+    p.add_argument("--vol_buckets", type=int, default=10, help="Number of within-year fwd-vol buckets (deciles)")
     p.add_argument("--blank_ticker", action="store_true", default=False)
     p.add_argument("--seed", type=int, default=42)
     return p.parse_args()
@@ -189,6 +224,15 @@ def main():
         (row.ticker, int(row.fiscal_year)): (int(row.cik), str(row.sic)[:2], row.filing_date)
         for row in ft.itertuples()
     }
+
+    # within-year forward-vol decile per filing -> "vol_bucket" label for the volatility-aware view.
+    # Computed on labelled TRAIN filings only (filing_date < 2025), so no leakage from val/test.
+    ftl = ft[ft["fwd_vol_30d"].notna() & (ft["filing_date"] < TRAIN_END)].copy()
+    ftl["fy"] = ftl["fiscal_year"].astype(int)
+    pct = ftl.groupby("fy")["fwd_vol_30d"].rank(pct=True)
+    dec = (pct * args.vol_buckets).clip(upper=args.vol_buckets - 1).astype(int)
+    vol_bucket = {(r.ticker, int(r.fiscal_year)): f"{int(r.fiscal_year)}_{d}"
+                  for r, d in zip(ftl.itertuples(), dec)}
 
     files = sorted(SP500_DIR.glob("*.pickle"))
     if args.max_files:
@@ -221,6 +265,7 @@ def main():
                 "uid": f"{ticker}_{year}_{idx}",
                 "text": norm, "ticker": ticker, "cik": cik,
                 "fiscal_year": year, "sic2": sic2,
+                "vol_bucket": vol_bucket.get((ticker, year)),
                 "filing_date": filing_date.strftime("%Y-%m-%d"), "split": split,
             })
 
@@ -231,6 +276,7 @@ def main():
     lexical = build_lexical(train_units, rng, args.min_lexical_words)
     chrono = build_chrono(train_units, rng, args.chrono_sim_threshold)
     sector = build_sector(train_units, rng, args.sector_pairs_per_group)
+    vol = build_vol_bucket(train_units, rng, args.vol_pairs_per_group)
 
     def dump(name, rows):
         path = out_dir / name
@@ -243,11 +289,14 @@ def main():
     dump("pairs_lexical.jsonl", lexical)
     dump("pairs_chrono.jsonl", chrono)
     dump("pairs_sector.jsonl", sector)
+    dump("pairs_vol.jsonl", vol)
 
+    n_labelled = sum(u["vol_bucket"] is not None for u in train_units)
     print("\nDone.")
     print(f"  lexical pairs : {len(lexical):,}")
     print(f"  chrono pairs  : {len(chrono):,}")
     print(f"  sector pairs  : {len(sector):,}")
+    print(f"  vol pairs     : {len(vol):,}  (from {n_labelled:,} vol-labelled train units)")
     print(f"  Output -> {out_dir}")
 
 

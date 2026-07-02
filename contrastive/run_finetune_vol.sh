@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=ftvol
 #SBATCH --partition=Teaching
-#SBATCH --gres=gpu:nvidia_rtx_a6000:1
+#SBATCH --gres=gpu:h200_1g.18gb:1
+#SBATCH --nodelist=saxa
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1

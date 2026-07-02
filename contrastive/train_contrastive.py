@@ -42,7 +42,7 @@ PAIRS_DIR = ROOT / "contrastive" / "pairs"
 BASE_MODEL = ROOT / "dapt_checkpoints_para" / "best"
 MAX_LEN = 256
 SCALE = 20.0  # cos-sim scale ⇒ τ = 1/20 = 0.05 (SimCSE / MNRL default)
-ALL_VIEWS = ["lexical", "chrono", "sector"]
+ALL_VIEWS = ["lexical", "chrono", "sector", "vol"]
 
 
 def parse_args():
@@ -58,6 +58,8 @@ def parse_args():
     p.add_argument("--epochs", type=int, default=30)
     p.add_argument("--lr", type=float, default=2e-5)
     p.add_argument("--lambda_sector", type=float, default=0.5)
+    p.add_argument("--lambda_vol", type=float, default=1.0,
+                   help="Weight for the volatility-aware view (same within-year fwd-vol decile = positive)")
     p.add_argument("--patience", type=int, default=3)
     p.add_argument("--lora", action="store_true", default=False)
     p.add_argument("--lora_r", type=int, default=16)
@@ -149,9 +151,15 @@ def run_epoch(model, examples, batch_size, lambda_map, device, optimizer=None, s
             continue
         a_texts = [b["anchor_text"] for b in batch]
         p_texts = [b["positive_text"] for b in batch]
-        # anchor + positive keys must share ONE id space so masking compares correctly
-        all_keys = [(b["anchor_sic2"], b["anchor_fy"]) for b in batch] + \
-                   [(b["positive_sic2"], b["positive_fy"]) for b in batch]
+        # anchor + positive keys must share ONE id space so masking compares correctly.
+        # View-aware label: for the volatility view, same within-year fwd-vol decile (vol_bucket) is the
+        # "label" (SupCon-style: same-vol items are masked out of the negatives, never pushed apart);
+        # for the other views the label stays (sic2, fy) as before.
+        def gkey(b, side):
+            if b["view"] == "vol" and b.get(f"{side}_vb") is not None:
+                return ("vol", b[f"{side}_vb"])
+            return (b[f"{side}_sic2"], b[f"{side}_fy"])
+        all_keys = [gkey(b, "anchor") for b in batch] + [gkey(b, "positive") for b in batch]
         ids = key_ids(all_keys)
         a_keys, p_keys = ids[: len(batch)], ids[len(batch):]
         weights = [lambda_map[b["view"]] for b in batch]
@@ -183,7 +191,7 @@ def main():
     torch.manual_seed(args.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     views = [v.strip() for v in args.views.split(",")]
-    lambda_map = {"lexical": 1.0, "chrono": 1.0, "sector": args.lambda_sector}
+    lambda_map = {"lexical": 1.0, "chrono": 1.0, "sector": args.lambda_sector, "vol": args.lambda_vol}
 
     print(f"Device: {device} | views: {views} | lora: {args.lora}")
     train, val = load_examples(args.pairs_dir, views, args.pairs_per_view, args.val_per_view, rng)

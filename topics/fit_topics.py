@@ -43,6 +43,7 @@ ENCODER_PATHS = {
     "dual": str(ROOT / "contrastive_checkpoints" / "dual"),
     "three": str(ROOT / "contrastive_checkpoints" / "three"),
     "three_lora": str(ROOT / "contrastive_checkpoints" / "three_lora"),
+    "volaware": str(ROOT / "contrastive_checkpoints" / "volaware"),  # Stage B vol-aware encoder
 }
 TOP_N = 10  # words per topic for coherence / diversity / display
 
