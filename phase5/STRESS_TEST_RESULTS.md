@@ -5,59 +5,85 @@ learned/multimodal model beat it? All numbers below are on the **P0-corrected pa
 (`fix_filing_join.py`: filename year = FILING year; unique fiscal keys). Pre-fix numbers
 (struct 0.570 / struct+tfidf 0.611) paired texts with the next filing's labels and are not comparable.
 
-## Anchors (val-2025, n=393, corrected panel — measured 2026-07-02)
+## Headline findings so far (2026-07-02, CPU experiments complete; encoder rows await GPU encode)
+
+1. **The join fix changed 74% of text↔label pairs** but left the TF-IDF headline almost unchanged
+   (struct+tfidf 0.610 val-2025) — fresh text ≈ year-stale text, i.e. Item-1A signal is persistent
+   boilerplate. The error was conservative (no leakage), and is now repaired.
+2. **Head asymmetry inflated the old "text increment."** `structured [ridge]` (0.591 val / 0.603
+   12-yr backtest) is much stronger than the `structured [hgb]` the ladder used (0.558 / 0.584).
+   Same-head comparison: text adds **+0.012 IC on val-2025** and **+0.011 IC (p=0.057) on the 12-yr
+   backtest** — consistent in sign across years, but ~5× smaller than the head-confounded +0.05.
+   On R²_log the text gain remains substantial (0.175 → 0.226 val-2025).
+3. **α-tuning is noise at this scale:** tuning the sparse-ridge α on 2024 *hurt* 2025
+   (tfidf+lag 0.508 tuned vs 0.541 at fixed α=10) — model-selection variance swamps these deltas,
+   reinforcing that only paired multi-year tests count.
+4. **Lexical change features don't add** (struct+change ≤ structured everywhere). The semantic
+   (`chg_enc_cos_*`) and shape (`chg_new_para_frac`) columns need the GPU encode — still open.
+   The features themselves are valid: clear COVID dip (median chg_lex_cos 0.964 in FY2020 vs ~0.976).
+
+## Anchors (val-2025, n=393, corrected panel)
 
 | condition | IC | R²_log |
 |---|---|---|
 | lagged [hgb] | 0.457 | −0.130 |
 | structured [hgb] | 0.558 | 0.094 |
-| tfidf+lag [sparse ridge] | 0.541 | 0.116 |
-| **struct+tfidf [sparse ridge]** | **0.610** | **0.220** |
+| **structured [ridge]** | **0.591** | 0.175 |
+| tfidf+lag [sparse α=10] | 0.541 | 0.116 |
+| struct+tfidf [sparse] | 0.603–0.610 | 0.220–0.226 |
 
-Text increment over structured: **+0.052 IC** (was +0.041 pre-fix). Note: at n≈393 a single-year IC has a
-±0.06 CI — val-2025 deltas alone are indicative only; the backtest paired tests are the verdict.
+(n≈393 ⇒ single-year IC has ±0.06 CI; val-2025 deltas are indicative only.)
 
-Notable audit finding: fresh text ≈ stale text IC (0.610 vs 0.611) — Item-1A signal is persistent
-boilerplate, which directly motivates the disclosure-change features (E2).
+## E3 — backtests (primary lens)
 
-## E3 — extended backtest (primary lens)
+| condition | 2018–2024 IC (t) | 2013–2024 IC (t) |
+|---|---|---|
+| lagged [hgb] | 0.456 (4.6) | 0.526 (8.3) |
+| structured [hgb] | 0.511 (5.0) | 0.584 (9.0) |
+| **structured [ridge]** | **0.546 (5.6)** | **0.603 (9.9)** |
+| tfidf+lag [sparse] | 0.499 (5.2) | 0.558 (9.3) |
+| struct+tfidf [sparse] | 0.561 (5.9) | 0.614 (10.4) |
+| struct+change [hgb] | 0.501 (5.0) | 0.578 (9.0) |
+| struct+tfidf+change [sparse] | 0.559 (6.0) | 0.612 (10.7) |
 
-`python phase5/stress_grid.py --mode backtest --test-start 2018` and `--test-start 2013`
+Paired across-years vs **structured [ridge]** (the fair baseline):
 
-| condition | 2018–2024 mean IC (t) | 2013–2024 mean IC (t) | ΔIC vs struct (p) |
-|---|---|---|---|
-| lagged [hgb] | TODO | TODO | — |
-| structured [hgb] | TODO | TODO | — |
-| tfidf+lag [sparse] | TODO | TODO | TODO |
-| struct+tfidf [sparse] | TODO | TODO | TODO |
-| struct+change [hgb] | TODO | TODO | TODO |
-| struct+tfidf+change [sparse] | TODO | TODO | TODO |
+| condition | 7-yr ΔIC (p) | 12-yr ΔIC (p) |
+|---|---|---|
+| struct+tfidf | +0.016 (0.098) | **+0.011 (0.057)** |
+| struct+tfidf+change | +0.013 (0.226) | +0.009 (0.163) |
+| structured [hgb] | −0.034 (0.152) | −0.019 (0.180) |
 
-Pre-fix reference: struct+tfidf beat struct by +0.050 IC at p=0.090 on 7 years — under-powered; 12 years
-is the powered test.
+vs the weaker structured [hgb]: struct+tfidf +0.050 (p=0.114) 7-yr / +0.030 (p=0.113) 12-yr —
+the old-style comparison, kept for reference. structured [hgb] vs lagged: +0.059 (p=0.007) 12-yr —
+the strong-baseline claim is solid.
 
-## E1 — fair grid + everything model (val-2025)
-
-`python phase5/stress_grid.py --mode val2025` (after `sbatch topics/run_encode.sh` fills
-`emb_<enc>_fixed.npy`; encoder rows auto-skip until then)
+## E1 — val-2025 fair grid (encoder rows pending GPU encode)
 
 | row | IC [95% CI] | R² | DM p vs struct+tfidf |
 |---|---|---|---|
-| struct+tfidf_svd [hgb] | TODO | | |
-| struct+enc[dual] [ridge/hgb] | TODO | | |
-| struct+enc[volaware] [hgb] | TODO | | |
-| struct+enc[ftvol] [hgb] | TODO | | |
-| struct+enc[bge] [hgb] | TODO | | |
-| pooling variants (risk_weighted / topk_risk) | TODO | | |
-| struct+enc+topic[best] [hgb] | TODO | | |
-| EVERYTHING (svd+enc+topic+chg) [hgb] | TODO | | |
-| EVERYTHING sparse twin | TODO | | |
+| struct+tfidf [sparse] (ref) | 0.603 [0.534, 0.670] | 0.226 | — |
+| structured [ridge] | 0.591 [0.522, 0.659] | 0.175 | 0.000 |
+| structured [hgb] | 0.558 [0.487, 0.628] | 0.094 | 0.001 |
+| struct+tfidf_svd [ridge] | 0.594 [0.526, 0.661] | 0.167 | 0.000 |
+| struct+tfidf_svd [hgb] | 0.569 [0.499, 0.639] | 0.167 | 0.123 |
+| struct+change [hgb] | 0.551 [0.477, 0.624] | 0.110 | 0.004 |
+| struct+tfidf+change [sparse] | 0.605 [0.537, 0.671] | 0.223 | 0.697 |
+| struct+enc[dual/sbert/volaware/ftvol/bge] × ridge/hgb | TODO (GPU) | | |
+| pooling variants; struct+enc+topic | TODO (GPU) | | |
+| EVERYTHING (svd+enc[+topic][+chg]) + sparse twin | TODO (GPU) | | |
 
-## E2 — disclosure-change features
+DM p is on squared-error loss: the sparse TF-IDF reference is significantly *more accurate* (R²) than
+every non-TF-IDF row so far — the lexical block earns its place on level accuracy, beyond ranking.
 
-`python dataset_config/build_change_features.py` — sanity gate: `chg_lex_cos` median in 0.55–0.97,
-coverage ≈ filings with a ≤2-yr prior (~7k). Key read-out: does `chg_enc_cos_*` (semantic change) add
-where `chg_lex_cos` (lexical change) does not? → the novel positive finding for dense encoders if yes.
+## What's left to settle the verdict
+
+1. `sbatch topics/run_encode.sh` (GPU; optional `hf download BAAI/bge-base-en-v1.5` first) → fills
+   `emb_<enc>_fixed.npy` (full-text windowed — encoders finally see 100% of the words TF-IDF sees).
+2. Re-run `dataset_config/build_change_features.py` (semantic/shape change columns) and
+   `python phase5/stress_grid.py --mode val2025` (encoder + EVERYTHING rows).
+3. If any encoder row approaches the reference: add it to the backtest as an SVD-style leakage-free
+   lane before claiming anything.
 
 ## Decision tree → conclusion (every branch a positive headline)
 
@@ -65,10 +91,12 @@ where `chg_lex_cos` (lexical change) does not? → the novel positive finding fo
 |---|---|
 | A learned combo beats struct+tfidf (backtest, paired p<0.05) | Learned/multimodal model beats the count-based ceiling. |
 | EVERYTHING > struct+tfidf | Dense/topic signal is orthogonal & additive to bag-of-words. |
-| Change features add (esp. semantic change) | Novel disclosure-change signal for vol forecasting (Lazy-Prices extension). |
-| All null | Text adds over a strong quant baseline (p<0.05 on 12 yrs), topics explain which risks, calls add tone; the exhaustive rep×head×pooling grid *characterizes* the signal as lexical — a sharp finding, not a negative. |
+| Semantic change adds where lexical change doesn't | Novel disclosure-change signal for vol forecasting (Lazy-Prices extension). |
+| All null | A strong structured-ridge baseline (IC 0.603, 12-yr) + a small but consistent lexical text increment (+0.011, p=0.057) + full head/representation/pooling grid *characterizing* the text signal as lexical-level — a sharp, honest contribution. |
 
 ## Run log
 
-- 2026-07-02 — P0-a join fix + re-baseline (this file's anchor table). P0-b encode scripts committed;
-  GPU job pending. E1/E2/E3 queued.
+- 2026-07-02 — P0-a join fix + re-baseline; P0-b encode scripts committed (GPU pending).
+  E2 built (6,713 pairs, COVID-dip validated). E3 run both windows + structured[ridge] fair lane.
+  E1 grid run (text/structured/change rows). Key discovery: head asymmetry inflated the old text
+  increment; fair-head text gain is +0.011 IC (p=0.057, 12 yr) with a large R² gain.

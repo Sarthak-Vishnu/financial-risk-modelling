@@ -137,8 +137,10 @@ def run_val2025(args):
         m = mk(); m.fit(X[tr], y[tr]); return m.predict(X[ev])
 
     # ---- reference + baselines -----------------------------------------------------------
-    yp, a = fit_sparse(panel, y, ["log_lag"] + scols, tr, ev)
-    tdf = panel.copy()
+    tdfs = panel.copy()
+    for i, c in enumerate(scols):
+        tdfs[c] = Xstr[:, i]
+    yp, a = fit_sparse(tdfs, y, ["log_lag"] + scols, tr, ev)
     add("struct+tfidf [sparse]", yp, {"alpha": a})
     add("lagged [hgb]", dense(lag, E.make_hgb))
     add("structured [ridge]", dense(base, E.make_imputed_ridge))
