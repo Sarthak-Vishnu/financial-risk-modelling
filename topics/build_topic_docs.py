@@ -41,6 +41,7 @@ from contrastive.build_pairs import normalize_text, parse_filename
 
 SP500_DIR = ROOT / "datasets" / "sp500_1A"
 FEATURE_TABLE = ROOT / "datasets" / "feature_table.parquet"
+FEATURE_TABLE_FIXED = ROOT / "datasets" / "feature_table_fixed.parquet"
 OUT_DIR = ROOT / "topics" / "data"
 
 TRAIN_END = pd.Timestamp("2025-01-01")
@@ -61,6 +62,10 @@ def parse_args():
     p.add_argument("--max_files", type=int, default=None, help="Toy run: limit pickles processed")
     p.add_argument("--min_para_words", type=int, default=20, help="Drop paragraphs shorter than this")
     p.add_argument("--blank_ticker", action="store_true", default=False)
+    p.add_argument("--fixed", action="store_true", default=False,
+                   help="Use feature_table_fixed.parquet's explicit pickle_file join (P0-a) and "
+                        "write topic_docs_fixed.jsonl. The legacy (ticker, filename-year) lookup "
+                        "paired texts with the NEXT filing's labels — see fix_filing_join.py.")
     return p.parse_args()
 
 
@@ -70,29 +75,45 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print("Loading feature table...")
-    ft = pd.read_parquet(FEATURE_TABLE)
-    ft["filing_date"] = pd.to_datetime(ft["filing_date"])
-    lookup = {
-        (row.ticker, int(row.fiscal_year)): (int(row.cik), str(row.sic)[:2], row.filing_date)
-        for row in ft.itertuples()
-    }
+    if args.fixed:
+        ft = pd.read_parquet(FEATURE_TABLE_FIXED)
+        ft["filing_date"] = pd.to_datetime(ft["filing_date"])
+        # explicit one-to-one join from fix_filing_join.py: pickle_file -> its row
+        by_file = {
+            row.pickle_file: (row.ticker, int(row.fiscal_year), int(row.cik),
+                              str(row.sic)[:2], row.filing_date)
+            for row in ft.itertuples() if pd.notna(row.pickle_file)
+        }
+    else:
+        ft = pd.read_parquet(FEATURE_TABLE)
+        ft["filing_date"] = pd.to_datetime(ft["filing_date"])
+        lookup = {
+            (row.ticker, int(row.fiscal_year)): (int(row.cik), str(row.sic)[:2], row.filing_date)
+            for row in ft.itertuples()
+        }
 
     files = sorted(SP500_DIR.glob("*.pickle"))
     if args.max_files:
         files = files[: args.max_files]
     print(f"Processing {len(files)} pickle files...")
 
-    out_path = out_dir / "topic_docs.jsonl"
+    out_path = out_dir / ("topic_docs_fixed.jsonl" if args.fixed else "topic_docs.jsonl")
     n_docs, skipped = 0, 0
     splits, by_year = Counter(), Counter()
     filings = set()
     with open(out_path, "w") as out:
         for fpath in files:
-            ticker, year = parse_filename(fpath.name)
-            if ticker is None or (ticker, year) not in lookup:
-                skipped += 1
-                continue
-            cik, sic2, filing_date = lookup[(ticker, year)]
+            if args.fixed:
+                if fpath.name not in by_file:
+                    skipped += 1
+                    continue
+                ticker, year, cik, sic2, filing_date = by_file[fpath.name]
+            else:
+                ticker, year = parse_filename(fpath.name)
+                if ticker is None or (ticker, year) not in lookup:
+                    skipped += 1
+                    continue
+                cik, sic2, filing_date = lookup[(ticker, year)]
             split = split_of(filing_date)
 
             with open(fpath, "rb") as fh:

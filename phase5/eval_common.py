@@ -21,8 +21,24 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-FEATURE_TABLE = ROOT / "datasets" / "feature_table.parquet"
-TOPIC_DOCS = ROOT / "topics" / "data" / "topic_docs.jsonl"
+import os
+
+# P0-a (fix_filing_join.py): the corrected filing<->text join re-keys fiscal_year and re-assigns
+# pickles by FILING year. When the corrected artifacts exist they are the default; every cache
+# aligned to them carries a "_fixed" suffix (embeddings/topic vectors built against the old join
+# are silently misaligned, so they must never be mixed). Set RISK_LEGACY_DATA=1 to reproduce
+# pre-fix numbers.
+_FT_FIXED = ROOT / "datasets" / "feature_table_fixed.parquet"
+_TD_FIXED = ROOT / "topics" / "data" / "topic_docs_fixed.jsonl"
+USE_FIXED = (_FT_FIXED.exists() and _TD_FIXED.exists()
+             and os.environ.get("RISK_LEGACY_DATA") != "1")
+CACHE_SUFFIX = "_fixed" if USE_FIXED else ""
+
+FEATURE_TABLE = _FT_FIXED if USE_FIXED else ROOT / "datasets" / "feature_table.parquet"
+MARKET_FEATURES = ROOT / "datasets" / "market_features.parquet"
+FUNDAMENTAL_FEATURES = ROOT / "datasets" / "fundamental_features.parquet"
+CALL_FEATURES = ROOT / "datasets" / "call_features.parquet"
+TOPIC_DOCS = _TD_FIXED if USE_FIXED else ROOT / "topics" / "data" / "topic_docs.jsonl"
 TOPIC_OUT = ROOT / "topics" / "out"
 
 EPS = 1e-6
@@ -93,13 +109,15 @@ def mean_pooled_filings(enc, pool="mean", topk=5):
     pool: 'mean' (default), 'max', 'risk_weighted' (weight paragraphs by risk-term density), or
     'topk_risk' (mean of the top-k riskiest paragraphs). Averaging blurs the signal when only a few
     paragraphs drive volatility — the alternatives test whether a sharper aggregation recovers it."""
-    cache = TOPIC_OUT / f"emb_{enc}.npy"
+    cache = TOPIC_OUT / f"emb_{enc}{CACHE_SUFFIX}.npy"
     if not cache.exists():
         return None
     emb = np.load(cache)
     docs = _docs_df()
     if len(docs) != emb.shape[0]:
-        raise SystemExit(f"[{enc}] emb rows {emb.shape[0]} != docs {len(docs)} — re-run Phase 4 encode")
+        print(f"[warn] emb_{enc}{CACHE_SUFFIX}.npy rows {emb.shape[0]} != docs {len(docs)} "
+              f"(stale cache — re-encode) -> skipping encoder '{enc}'")
+        return None
     risk = _risk_scores() if pool in ("risk_weighted", "topk_risk") else None
     groups = docs.groupby(["ticker", "fiscal_year"]).indices
     rows, vecs = [], []
@@ -126,13 +144,67 @@ def mean_pooled_filings(enc, pool="mean", topk=5):
 
 def topic_filings(enc):
     """Per-filing topic-exposure (t0..t{K-1}) + outlier_frac, keyed (ticker, fiscal_year). None if absent."""
-    pq = TOPIC_OUT / f"filing_topic_vectors_{enc}.parquet"
+    pq = TOPIC_OUT / f"filing_topic_vectors_{enc}{CACHE_SUFFIX}.parquet"
     if not pq.exists():
         return None
     df = pd.read_parquet(pq)
     tcols = [c for c in df.columns if c.startswith("t") and c[1:].isdigit()]
     keep = ["ticker", "fiscal_year"] + tcols + (["outlier_frac"] if "outlier_frac" in df.columns else [])
     return df[keep].copy()
+
+
+def structured_filings():
+    """Per-filing structured features keyed (ticker, filing_date): market (Stage A) + Compustat
+    fundamentals, outer-joined on the shared key. None until at least one of the two is built."""
+    frames = []
+    for path in (MARKET_FEATURES, FUNDAMENTAL_FEATURES):
+        if path.exists():
+            d = pd.read_parquet(path)
+            d["filing_date"] = pd.to_datetime(d["filing_date"])
+            frames.append(d)
+    if not frames:
+        return None
+    df = frames[0]
+    for d in frames[1:]:
+        df = df.merge(d, on=["ticker", "filing_date"], how="outer")
+    return df
+
+
+def structured_matrix(df, feats=None):
+    """Merge market features onto panel rows by (ticker, filing_date). Returns (ndarray, colnames).
+    NaNs are preserved (HGB handles them natively; the imputed-ridge head fills them per fold).
+    `df` must carry ticker + filing_date (load_panel does). Returns (None, []) if Stage A not built."""
+    mf = structured_filings()
+    if mf is None:
+        return None, []
+    cols = feats or [c for c in mf.columns if c not in ("ticker", "filing_date")]
+    key = df[["ticker", "filing_date"]].copy()
+    key["filing_date"] = pd.to_datetime(key["filing_date"])
+    merged = key.merge(mf[["ticker", "filing_date"] + cols], on=["ticker", "filing_date"], how="left")
+    return merged[cols].to_numpy(dtype=float), cols
+
+
+def call_matrix(df):
+    """Merge earnings-call tone features onto panel rows by (ticker, filing_date). (None, []) if not built.
+    Calls cover 2025-2026 only -> use this on the val-2025 split (pilot), not the full backtest."""
+    if not CALL_FEATURES.exists():
+        return None, []
+    mf = pd.read_parquet(CALL_FEATURES)
+    mf["filing_date"] = pd.to_datetime(mf["filing_date"])
+    cols = [c for c in mf.columns if c.startswith("call_")]
+    key = df[["ticker", "filing_date"]].copy()
+    key["filing_date"] = pd.to_datetime(key["filing_date"])
+    merged = key.merge(mf, on=["ticker", "filing_date"], how="left")
+    return merged[cols].to_numpy(dtype=float), cols
+
+
+def make_imputed_ridge():
+    """Ridge for dense numeric blocks that may contain NaN: median-impute (fit on train) -> scale -> RidgeCV."""
+    from sklearn.pipeline import make_pipeline
+    from sklearn.impute import SimpleImputer
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.linear_model import RidgeCV
+    return make_pipeline(SimpleImputer(strategy="median"), StandardScaler(), RidgeCV(alphas=ALPHAS))
 
 
 def controls_matrix(df):
@@ -178,34 +250,45 @@ def make_hgb():
 
 
 class TextNumericRidge:
-    """TF-IDF over risk text, optionally hstacked with standardized numeric cols, then RidgeCV.
-    Fits its own vectorizer/scaler on the training fold (leakage-safe)."""
+    """TF-IDF over risk text, optionally hstacked with median-imputed + standardized numeric cols,
+    then a fixed-alpha sparse Ridge (lsqr). Fits vectorizer/imputer/scaler on the training fold
+    (leakage-safe). Uses Ridge not RidgeCV: RidgeCV's GCV densifies the big sparse TF-IDF and stalls."""
 
-    def __init__(self, numeric_cols=None, max_features=20000, min_df=5):
+    def __init__(self, numeric_cols=None, max_features=20000, min_df=5, alpha=10.0):
         self.numeric_cols = numeric_cols or []
         self.max_features = max_features
         self.min_df = min_df
+        self.alpha = alpha
+
+    def _numeric(self, X, fit):
+        from sklearn.impute import SimpleImputer
+        from sklearn.preprocessing import StandardScaler
+        from scipy.sparse import csr_matrix
+        A = X[self.numeric_cols].to_numpy(dtype=float)
+        if fit:
+            self.imp_ = SimpleImputer(strategy="median").fit(A)
+            self.sc_ = StandardScaler().fit(self.imp_.transform(A))
+        return csr_matrix(self.sc_.transform(self.imp_.transform(A)))
 
     def fit(self, X, y):
         from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.linear_model import RidgeCV
-        from scipy.sparse import hstack, csr_matrix
+        from sklearn.linear_model import Ridge
+        from scipy.sparse import hstack
         self.vec_ = TfidfVectorizer(stop_words="english", ngram_range=(1, 2),
                                     min_df=self.min_df, max_features=self.max_features,
                                     sublinear_tf=True)
         Xt = self.vec_.fit_transform(X["text"])
         if self.numeric_cols:
-            self.sc_ = StandardScaler().fit(X[self.numeric_cols].to_numpy())
-            Xt = hstack([Xt, csr_matrix(self.sc_.transform(X[self.numeric_cols].to_numpy()))]).tocsr()
-        self.model_ = RidgeCV(alphas=ALPHAS).fit(Xt, y)
+            Xt = hstack([Xt, self._numeric(X, fit=True)]).tocsr()
+        # fixed-alpha sparse Ridge (lsqr) — RidgeCV's GCV densifies the TF-IDF block and stalls
+        self.model_ = Ridge(alpha=self.alpha, solver="lsqr", max_iter=1000).fit(Xt, y)
         return self
 
     def predict(self, X):
-        from scipy.sparse import hstack, csr_matrix
+        from scipy.sparse import hstack
         Xt = self.vec_.transform(X["text"])
         if self.numeric_cols:
-            Xt = hstack([Xt, csr_matrix(self.sc_.transform(X[self.numeric_cols].to_numpy()))]).tocsr()
+            Xt = hstack([Xt, self._numeric(X, fit=False)]).tocsr()
         return self.model_.predict(Xt)
 
 
