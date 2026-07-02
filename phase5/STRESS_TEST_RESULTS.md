@@ -69,9 +69,21 @@ the strong-baseline claim is solid.
 | struct+tfidf_svd [hgb] | 0.569 [0.499, 0.639] | 0.167 | 0.123 |
 | struct+change [hgb] | 0.551 [0.477, 0.624] | 0.110 | 0.004 |
 | struct+tfidf+change [sparse] | 0.605 [0.537, 0.671] | 0.223 | 0.697 |
-| struct+enc[dual/sbert/volaware/ftvol/bge] × ridge/hgb | TODO (GPU) | | |
-| pooling variants; struct+enc+topic | TODO (GPU) | | |
-| EVERYTHING (svd+enc[+topic][+chg]) + sparse twin | TODO (GPU) | | |
+| struct+enc[dual] [ridge] — **full text** | 0.582 [0.509, 0.652] | 0.162 | 0.013 |
+| struct+enc[dual] [hgb] | 0.582 [0.511, 0.651] | 0.160 | 0.051 |
+| struct+enc[sbert] [ridge] | 0.562 [0.482, 0.636] | 0.017 | 0.000 |
+| struct+enc[sbert] [hgb] | 0.591 [0.521, 0.658] | 0.149 | 0.043 |
+| pooling variants (risk_weighted/topk_risk × dual/sbert) | 0.573–0.578 | 0.145–0.172 | ≤0.128 |
+| EVERYTHING svd+enc[sbert]+chg [hgb] | 0.576 [0.505, 0.649] | 0.147 | 0.040 |
+| EVERYTHING sparse twin | 0.548 [0.465, 0.624] | −0.063 | 0.000 |
+| struct+enc[volaware/ftvol/bge] | pending encode re-run (job 3526854 died silently at volaware 54%) | | |
+
+**Encoder verdict (fair conditions — full text via windowing, corrected labels, both heads):**
+dual/sbert sit at or below the no-text structured [ridge] baseline (0.591) on IC and are
+significantly less accurate than struct+tfidf by DM test. Fixing the 65% truncation did NOT rescue
+the encoders. The EVERYTHING model dilutes rather than adds; semantic change (chg_enc_cos_dual)
+adds nothing over lexical change. Remaining open: volaware / ftvol / bge (the "modern embedder"
+objection) — resubmit `topics/run_encode.sh` (now per-encoder-isolated) and re-run the grid.
 
 DM p is on squared-error loss: the sparse TF-IDF reference is significantly *more accurate* (R²) than
 every non-TF-IDF row so far — the lexical block earns its place on level accuracy, beyond ranking.

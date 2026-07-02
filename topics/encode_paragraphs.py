@@ -114,7 +114,11 @@ def main():
         if cache.exists() and np.load(cache, mmap_mode="r").shape[0] == len(texts):
             print(f"  [{enc}] cache OK ({cache.name}) — skipping")
             continue
-        emb = encode_one(enc, texts, args)
+        try:
+            emb = encode_one(enc, texts, args)
+        except Exception as e:  # one encoder's failure must not abort the remaining ones
+            print(f"  [{enc}] FAILED mid-encode ({type(e).__name__}: {e}) — continuing with next encoder")
+            continue
         if emb is None:
             continue
         np.save(cache, emb)

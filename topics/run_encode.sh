@@ -23,6 +23,13 @@ cd /home/s2880814/financial-risk-modelling
 export PYTHONUNBUFFERED=1
 export HF_HUB_OFFLINE=1
 
-python topics/encode_paragraphs.py --encoders dual,sbert,volaware,ftvol,bge --batch_size 64
+# one python process per encoder: a silent GPU-side kill (seen with volaware, job 3526854,
+# died at 54% with exit 0 and no traceback) must not take the remaining encoders down with it.
+# Cached emb_<enc>_fixed.npy are skipped automatically, so resubmission is idempotent.
+for ENC in dual sbert volaware ftvol bge; do
+    echo "--- encoding $ENC ---"
+    python topics/encode_paragraphs.py --encoders "$ENC" --batch_size 64 \
+        || echo "--- $ENC FAILED (exit $?) — continuing ---"
+done
 
 echo "=== DONE. Caches in topics/out/emb_*_fixed.npy ==="
