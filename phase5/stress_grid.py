@@ -58,6 +58,11 @@ def parse_args():
     p.add_argument("--test-start", type=int, default=2018, dest="test_start")
     p.add_argument("--pool-encoders", type=int, default=2,
                    help="how many top encoders also get risk_weighted/topk_risk pooling rows")
+    p.add_argument("--enc", type=str, default="",
+                   help="backtest mode: comma list of encoder lanes to add (e.g. ftvol2018). "
+                        "ONLY admissible for encoders whose training never saw the test years' "
+                        "labels — the vol-supervised ftvol/volaware checkpoints trained on "
+                        "pre-2025 labels do NOT qualify for pre-2025 test windows.")
     return p.parse_args()
 
 
@@ -259,6 +264,7 @@ def run_backtest(args):
     conds = {
         "lagged [hgb]": (lag, E.make_hgb),
         "structured [hgb]": (base, E.make_hgb),
+        "structured [ridge]": (base, E.make_imputed_ridge),
         "tfidf+lag [sparse]": (panel, lambda: E.TextNumericRidge(numeric_cols=["log_lag"])),
         "struct+tfidf [sparse]": (tdf2, lambda: E.TextNumericRidge(numeric_cols=["log_lag"] + scols)),
     }
@@ -269,6 +275,16 @@ def run_backtest(args):
             tdfc[c] = chg[:, i]
         conds["struct+tfidf+change [sparse]"] = (
             tdfc, lambda: E.TextNumericRidge(numeric_cols=["log_lag"] + scols + ccols))
+
+    # encoder lanes (frozen embeddings; admissible iff the encoder never saw test-year labels)
+    for enc in [e.strip() for e in args.enc.split(",") if e.strip()]:
+        Eenc, _ = merge_enc(panel, enc)
+        if Eenc is None:
+            print(f"(no emb_{enc}{E.CACHE_SUFFIX}.npy cache — skipping encoder lane)")
+            continue
+        Xe = np.hstack([base, Eenc])
+        conds[f"struct+enc[{enc}] [ridge]"] = (Xe, E.make_imputed_ridge)
+        conds[f"struct+enc[{enc}] [hgb]"] = (Xe, E.make_hgb)
 
     per, aggs = {}, {}
     for name, (X, mk) in conds.items():
@@ -287,10 +303,20 @@ def run_backtest(args):
         tests[name] = {"d_ic": d, "p": p}
         print(f"  {name:30s} dIC {d:+.3f}  p {p:.4f}")
 
+    print("\nPaired across-years tests vs struct+tfidf [sparse] (IC) — the count-model reference:")
+    tests_ref = {}
+    for name in conds:
+        if name == "struct+tfidf [sparse]":
+            continue
+        d, p = E.paired_year_test(per[name], per["struct+tfidf [sparse]"], key="spear")
+        tests_ref[name] = {"d_ic": d, "p": p}
+        print(f"  {name:30s} dIC {d:+.3f}  p {p:.4f}")
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     out = OUT_DIR / f"stress_grid_backtest_{args.test_start}{E.CACHE_SUFFIX}.json"
     json.dump({"test_years": test_years, "fixed_data": E.USE_FIXED,
-               "per_year": per, "aggregate": aggs, "paired_vs_structured": tests},
+               "per_year": per, "aggregate": aggs, "paired_vs_structured": tests,
+               "paired_vs_struct_tfidf": tests_ref},
               open(out, "w"), indent=2, default=float)
     print(f"\nSaved -> {out}")
 

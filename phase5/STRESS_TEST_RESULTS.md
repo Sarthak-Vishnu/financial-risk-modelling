@@ -73,29 +73,58 @@ the strong-baseline claim is solid.
 | struct+enc[dual] [hgb] | 0.582 [0.511, 0.651] | 0.160 | 0.051 |
 | struct+enc[sbert] [ridge] | 0.562 [0.482, 0.636] | 0.017 | 0.000 |
 | struct+enc[sbert] [hgb] | 0.591 [0.521, 0.658] | 0.149 | 0.043 |
-| pooling variants (risk_weighted/topk_risk × dual/sbert) | 0.573–0.578 | 0.145–0.172 | ≤0.128 |
-| EVERYTHING svd+enc[sbert]+chg [hgb] | 0.576 [0.505, 0.649] | 0.147 | 0.040 |
-| EVERYTHING sparse twin | 0.548 [0.465, 0.624] | −0.063 | 0.000 |
-| struct+enc[volaware/ftvol/bge] | volaware cached (grid re-run in progress); ftvol+bge await third encode job | | |
+| struct+enc[volaware] [ridge] | 0.587 [0.514, 0.656] | 0.147 | 0.003 |
+| **struct+enc[volaware] [hgb]** | **0.597 [0.530, 0.663]** | **0.207** | 0.593 |
+| **struct+enc[ftvol] [ridge]** | **0.606 [0.540, 0.672]** | 0.185 | 0.207 |
+| struct+enc[ftvol] [hgb] | 0.598 [0.529, 0.666] | 0.167 | 0.155 |
+| struct+enc[bge] [ridge] | 0.580 [0.506, 0.649] | 0.093 | 0.000 |
+| struct+enc[bge] [hgb] | 0.584 [0.512, 0.651] | 0.145 | 0.023 |
+| struct+enc[ftvol,risk_weighted] [hgb] | 0.604 [0.538, 0.672] | 0.185 | 0.324 |
+| **struct+enc[ftvol,topk_risk] [hgb]** | **0.607 [0.538, 0.677]** | 0.194 | 0.454 |
+| struct+enc[volaware,{risk_weighted,topk_risk}] [hgb] | 0.586–0.593 | 0.180–0.203 | ≥0.165 |
+| pooling variants (risk_weighted/topk_risk × dual/sbert, earlier run) | 0.573–0.578 | 0.145–0.172 | ≤0.128 |
+| struct+change [hgb] (full semantic+shape cols) | 0.557 [0.484, 0.630] | 0.084 | 0.001 |
+| struct+tfidf+change [sparse] | 0.609 [0.542, 0.672] | 0.219 | 0.355 |
+| **EVERYTHING svd+enc[ftvol]+chg [hgb]** | **0.608 [0.542, 0.675]** | 0.170 | 0.204 |
+| EVERYTHING tfidf+enc[ftvol]+chg [sparse] | 0.590 [0.525, 0.662] | 0.165 | 0.135 |
 
-**Encoder verdict (fair conditions — full text via windowing, corrected labels, both heads):**
-dual/sbert sit at or below the no-text structured [ridge] baseline (0.591) on IC and are
-significantly less accurate than struct+tfidf by DM test. Fixing the 65% truncation did NOT rescue
-the encoders. The EVERYTHING model dilutes rather than adds; semantic change (chg_enc_cos_dual)
-adds nothing over lexical change. Remaining open: volaware / ftvol / bge (the "modern embedder"
-objection) — resubmit `topics/run_encode.sh` (now per-encoder-isolated) and re-run the grid.
+**Encoder verdict, full grid (fair conditions — full text via windowing, corrected labels, both heads):**
+
+1. **Generic semantic encoders lose.** dual/sbert/bge — including bge, the modern general-purpose
+   embedder (the last "you never tried X" objection) — sit at or below the no-text structured
+   [ridge] baseline (0.591) and are DM-significantly less accurate than struct+tfidf. Fixing the
+   65% truncation did NOT rescue them.
+2. **Task-aligned encoders reach parity — the only ones that do.** ftvol (supervised vol
+   fine-tune) 0.606/0.607, volaware (vol-aware contrastive) 0.597 with the second-best R² (0.207).
+   Clear pattern: what closes the gap is not model modernity but *training on the volatility task*.
+   All differences vs the TF-IDF reference are DM-insignificant → **statistical tie, not a win**.
+3. **Admissibility caveats on the parity rows (audit 2026-07-03):**
+   - `finetune_vol.py` selected its best epoch by **val-2025 filing IC** → ftvol's val-2025 rows
+     are inflated by model selection on the eval set.
+   - Both ftvol and volaware were trained with volatility labels (regression target / within-year
+     vol-decile pairing) from **all pre-2025 filings** → a 2013/2018-start backtest with the
+     current checkpoints is **inadmissible** (encoder saw test-year labels), so the pre-registered
+     "backtest lane before claiming anything" cannot run on these checkpoints.
+   - Both were also trained on the **pre-fix** (P0-a broken) labels/corpus — a headwind, not a tail
+     wind, so parity survived a handicap. A clean retrain could go either way.
+
+**Decisive experiment (queued): clean-protocol retrain.** Fine-tune ftvol on filings < 2018 ONLY
+(fixed corpus + fixed labels, epoch selection on the last train year, post-cutoff years never
+touched), re-encode full-text, then a legitimate 2018–2024 expanding-window backtest with paired
+DM tests vs struct+tfidf. This either produces "task-supervised encoder beats the count model"
+with airtight protocol, or upgrades the tie/loss to a defensible final verdict.
 
 DM p is on squared-error loss: the sparse TF-IDF reference is significantly *more accurate* (R²) than
 every non-TF-IDF row so far — the lexical block earns its place on level accuracy, beyond ranking.
 
 ## What's left to settle the verdict
 
-1. `sbatch topics/run_encode.sh` (GPU; optional `hf download BAAI/bge-base-en-v1.5` first) → fills
-   `emb_<enc>_fixed.npy` (full-text windowed — encoders finally see 100% of the words TF-IDF sees).
-2. Re-run `dataset_config/build_change_features.py` (semantic/shape change columns) and
-   `python phase5/stress_grid.py --mode val2025` (encoder + EVERYTHING rows).
-3. If any encoder row approaches the reference: add it to the backtest as an SVD-style leakage-free
-   lane before claiming anything.
+1. ~~GPU encode~~ DONE (all five encoders, full-text windowed). ~~Grid re-run~~ DONE 2026-07-03.
+2. **Clean-protocol ftvol retrain** (`contrastive/run_ftvol2018.sh`): train < 2018 on fixed data,
+   select on 2017, freeze, windowed re-encode, then
+   `python phase5/stress_grid.py --mode backtest --test-start 2018 --enc ftvol2018` —
+   the only admissible multi-year test of the task-supervised encoder.
+3. Write the final verdict from that backtest's paired DM tests.
 
 ## Decision tree → conclusion (every branch a positive headline)
 
@@ -108,6 +137,12 @@ every non-TF-IDF row so far — the lexical block earns its place on level accur
 
 ## Run log
 
+- 2026-07-03 (morning) — job 3527358 completed: ftvol + bge full-text embeddings cached (all 5
+  encoders done). change_features rebuilt with semantic (sbert/volaware) + shape columns;
+  chg_new_para_frac populated for the first time (median 0.27). Full val-2025 grid run:
+  bge loses decisively; ftvol/volaware reach DM-insignificant parity with struct+tfidf.
+  Provenance audit found both vol-encoders trained on pre-2025 vol labels (backtest inadmissible
+  with current checkpoints) + ftvol epoch-selected on val-2025 → clean-protocol retrain queued.
 - 2026-07-03 — encode job 3527085: **volaware saved** (462,590 windows). ftvol failed — checkpoint
   had no tokenizer/module files; fixed by copying them from volaware (same mpnet base), smoke-tested.
   bge encoded fully but `np.save` hit EIO on the 95%-full OST; corrupt file removed and

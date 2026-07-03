@@ -9,6 +9,13 @@ is the embeddings become *vol-discriminative*, not just semantically smooth.
 
 Strictly forward-looking: train on filings < 2025, monitor on 2025 (filing-level cross-sectional IC).
 
+Clean protocol (2026-07-03, --train_end): the original run trained on ALL pre-2025 vol labels and
+epoch-selected on val-2025 IC, which (a) contaminates val-2025 via model selection and (b) makes any
+backtest over pre-2025 test years inadmissible — the encoder saw their labels. With --train_end Y the
+split is: train on filing-year < Y-1, select the epoch on filing-year == Y-1, never touch >= Y. A
+backtest with test years >= Y is then leakage-free. Data defaults are the P0-corrected files
+(topic_docs_fixed.jsonl / feature_table_fixed.parquet); pass --legacy_data for the old broken join.
+
 Outputs (default --out_dir contrastive_checkpoints/ftvol):
   the fine-tuned SentenceTransformer encoder (re-embeddable by the Phase-5 harness)
   head.pt, train_summary.json
@@ -38,8 +45,10 @@ from sentence_transformers import SentenceTransformer, models
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-TOPIC_DOCS = ROOT / "topics" / "data" / "topic_docs.jsonl"
-FEATURE_TABLE = ROOT / "datasets" / "feature_table.parquet"
+TOPIC_DOCS = ROOT / "topics" / "data" / "topic_docs_fixed.jsonl"
+FEATURE_TABLE = ROOT / "datasets" / "feature_table_fixed.parquet"
+TOPIC_DOCS_LEGACY = ROOT / "topics" / "data" / "topic_docs.jsonl"
+FEATURE_TABLE_LEGACY = ROOT / "datasets" / "feature_table.parquet"
 DEFAULT_BASE = ROOT / "dapt_checkpoints_para" / "best"
 MAX_LEN = 256
 EPS = 1e-6
@@ -57,15 +66,23 @@ def parse_args():
     p.add_argument("--lora_r", type=int, default=16)
     p.add_argument("--fp16", action="store_true", default=False)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--train_end", type=int, default=2025,
+                   help="train on filing-year < train_end-1, select epoch on == train_end-1; "
+                        "years >= train_end are never touched (admissible backtest start)")
+    p.add_argument("--legacy_data", action="store_true",
+                   help="use the pre-P0-a (broken join) corpus/labels of the original run")
+    p.add_argument("--skip_emb", action="store_true",
+                   help="skip the final truncating embed-all; use topics/encode_paragraphs.py "
+                        "(windowed, full-text) on the saved encoder instead")
     return p.parse_args()
 
 
-def load_data():
+def load_data(legacy=False):
     """Per-paragraph (text, filing log_fwd_vol, year, filing_id) in topic_docs order."""
-    ft = pd.read_parquet(FEATURE_TABLE)
+    ft = pd.read_parquet(FEATURE_TABLE_LEGACY if legacy else FEATURE_TABLE)
     lab = {(r.ticker, int(r.fiscal_year)): np.log(max(r.fwd_vol_30d, EPS))
            for r in ft.itertuples() if pd.notna(r.fwd_vol_30d)}
-    docs = pd.read_json(TOPIC_DOCS, lines=True)
+    docs = pd.read_json(TOPIC_DOCS_LEGACY if legacy else TOPIC_DOCS, lines=True)
     docs["y"] = [lab.get((t, int(fy)), np.nan) for t, fy in zip(docs["ticker"], docs["fiscal_year"])]
     docs["fid"] = docs["ticker"] + "_" + docs["fiscal_year"].astype(str)
     docs["year"] = pd.to_datetime(docs["filing_date"]).dt.year
@@ -108,9 +125,12 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Device: {device} | base: {args.base_model} | lora: {args.lora}")
 
-    docs = load_data()
-    tr = docs[(docs.year < 2025) & docs.y.notna()].reset_index(drop=True)
-    va = docs[(docs.year == 2025) & docs.y.notna()].reset_index(drop=True)
+    docs = load_data(legacy=args.legacy_data)
+    sel_year = args.train_end - 1  # epoch-selection year: last year before the untouched region
+    tr = docs[(docs.year < sel_year) & docs.y.notna()].reset_index(drop=True)
+    va = docs[(docs.year == sel_year) & docs.y.notna()].reset_index(drop=True)
+    print(f"train_end {args.train_end} (train < {sel_year}, select on {sel_year}, "
+          f">= {args.train_end} untouched) | legacy_data={args.legacy_data}")
     print(f"Train paragraphs: {len(tr):,} | val paragraphs: {len(va):,} "
           f"({va.fid.nunique()} val filings)")
 
@@ -176,8 +196,15 @@ def main():
         peft_handle.merge_and_unload()
     model.save(str(out_dir))
     json.dump({"base": args.base_model, "best_val_filing_ic": float(best_ic),
+               "select_year": sel_year, "train_end": args.train_end,
+               "legacy_data": args.legacy_data,
                "epochs": args.epochs, "lora": args.lora, "y_mean": float(ymean), "y_std": float(ystd)},
               open(out_dir / "train_summary.json", "w"), indent=2)
+
+    if args.skip_emb:
+        print(f"\nBest val filing IC {best_ic:.4f} (on {sel_year}) -> saved {out_dir}")
+        print("Now: python topics/encode_paragraphs.py --encoders <name>   (windowed full-text encode)")
+        return
 
     # emit per-paragraph embeddings (topic_docs order) for the Phase-5 harness
     print("Embedding all paragraphs for evaluation...", flush=True)

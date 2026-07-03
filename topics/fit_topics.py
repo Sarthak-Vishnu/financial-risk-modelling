@@ -45,6 +45,7 @@ ENCODER_PATHS = {
     "three_lora": str(ROOT / "contrastive_checkpoints" / "three_lora"),
     "volaware": str(ROOT / "contrastive_checkpoints" / "volaware"),  # Stage B vol-aware encoder
     "ftvol": str(ROOT / "contrastive_checkpoints" / "ftvol"),        # Lever 3 supervised fine-tune
+    "ftvol2018": str(ROOT / "contrastive_checkpoints" / "ftvol2018"),  # clean protocol: train <2017, select 2017
     "bge": "BAAI/bge-base-en-v1.5",                                  # modern-embedder A/B (E4b)
 }
 TOP_N = 10  # words per topic for coherence / diversity / display
