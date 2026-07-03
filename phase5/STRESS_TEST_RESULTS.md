@@ -76,7 +76,7 @@ the strong-baseline claim is solid.
 | pooling variants (risk_weighted/topk_risk × dual/sbert) | 0.573–0.578 | 0.145–0.172 | ≤0.128 |
 | EVERYTHING svd+enc[sbert]+chg [hgb] | 0.576 [0.505, 0.649] | 0.147 | 0.040 |
 | EVERYTHING sparse twin | 0.548 [0.465, 0.624] | −0.063 | 0.000 |
-| struct+enc[volaware/ftvol/bge] | pending encode re-run (job 3526854 died silently at volaware 54%) | | |
+| struct+enc[volaware/ftvol/bge] | volaware cached (grid re-run in progress); ftvol+bge await third encode job | | |
 
 **Encoder verdict (fair conditions — full text via windowing, corrected labels, both heads):**
 dual/sbert sit at or below the no-text structured [ridge] baseline (0.591) on IC and are
@@ -108,6 +108,10 @@ every non-TF-IDF row so far — the lexical block earns its place on level accur
 
 ## Run log
 
+- 2026-07-03 — encode job 3527085: **volaware saved** (462,590 windows). ftvol failed — checkpoint
+  had no tokenizer/module files; fixed by copying them from volaware (same mpnet base), smoke-tested.
+  bge encoded fully but `np.save` hit EIO on the 95%-full OST; corrupt file removed and
+  `topics/out` + `phase5` striped to OST2 (`lfs setstripe -i 2`). Third submit encodes only ftvol+bge.
 - 2026-07-02 — P0-a join fix + re-baseline; P0-b encode scripts committed (GPU pending).
   E2 built (6,713 pairs, COVID-dip validated). E3 run both windows + structured[ridge] fair lane.
   E1 grid run (text/structured/change rows). Key discovery: head asymmetry inflated the old text
