@@ -296,6 +296,41 @@ exactly as the brief requires; the outcome is an informative negative on a sharp
 
 ---
 
+# PART 3 — The stress test (final, 2026-07-04)
+
+Full detail + all tables: `phase5/STRESS_TEST_RESULTS.md`. The mandate was: be absolutely sure the
+"count-based text wins" conclusion survives an adversarial audit — or find the pipeline change that
+overturns it. Every prior choice was questioned first. Outcome, in five results:
+
+1. **Two real defects found and fixed before trusting any number.** (P0-a) the filename year is the
+   *filing* year, not fiscal year — 74% of text↔label pairs were re-keyed; headline barely moved
+   (0.611→0.610), which is itself a substantive finding: *year-stale risk text predicts volatility
+   as well as fresh text* — Item-1A is persistent boilerplate (independent corroboration of
+   Lazy-Prices). (P0-b) encoders previously saw only ~35% of the words TF-IDF saw (256-token
+   truncation); fixed with windowed full-text encoding — and the encoders still lose, converting
+   the old unfair comparison into a defended one.
+2. **The old "+0.05 text increment" was ~80% a head artifact.** structured[ridge] (IC 0.603, 12-yr)
+   ≫ structured[hgb] (0.584). Same-head text gain: **+0.011 IC (p=0.057)**, with a large accuracy
+   gain (R² 0.175→0.226, DM p<0.001). Lesson for any ablation: hold the head fixed.
+3. **No encoder beats the count model under any admissible protocol.** Generic encoders — sbert,
+   dual, and bge (the modern-embedder objection) — lose outright. Vol-supervised encoders (ftvol,
+   volaware) reach DM-insignificant *parity* on val-2025 — but their training saw all pre-2025
+   labels (and ftvol epoch-selected on val-2025). The clean retrain (train <2017, select 2017,
+   freeze) collapses on the admissible 2018–2024 backtest: 0.50 IC, ≈0 over structured, −0.06 vs
+   struct+tfidf. **Task-aligned training closes the in-period gap; forward transfer erases it.**
+   The dense text→vol mapping is era-specific, while TF-IDF's lexical levels + cheap annual refit
+   stay current by construction.
+4. **Disclosure-change features (Lazy-Prices extension) are null**: lexical and semantic change,
+   validated features (COVID-year dip), add nothing over level TF-IDF on either backtest window.
+5. **The final model and its defense:** `struct+tfidf [sparse]` — IC 0.614 (t=10.4) over the 12-yr
+   expanding-window backtest, R²_log 0.226 on val-2025 — now backed by a fair grid (2 heads × 8
+   text representations × 3 poolings × topics × change × fusions, paired DM tests throughout,
+   leakage audit including encoder-training provenance). The thesis contribution is a *defended
+   benchmark plus the characterization of why*: the volatility signal in 10-K risk text is
+   lexical-level, persistent, and count-representable.
+
+---
+
 ## My doubts / open questions
 
 - Dual contrastive is a replication of Chiu et al. — is our IC for it comparable to theirs?

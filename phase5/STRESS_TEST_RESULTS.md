@@ -127,14 +127,37 @@ with airtight protocol, or upgrades the tie/loss to a defensible final verdict.
 DM p is on squared-error loss: the sparse TF-IDF reference is significantly *more accurate* (R²) than
 every non-TF-IDF row so far — the lexical block earns its place on level accuracy, beyond ranking.
 
-## What's left to settle the verdict
+## FINAL VERDICT (2026-07-04, job 3527629 — all experiments complete)
 
-1. ~~GPU encode~~ DONE (all five encoders, full-text windowed). ~~Grid re-run~~ DONE 2026-07-03.
-2. **Clean-protocol ftvol retrain** (`contrastive/run_ftvol2018.sh`): train < 2018 on fixed data,
-   select on 2017, freeze, windowed re-encode, then
-   `python phase5/stress_grid.py --mode backtest --test-start 2018 --enc ftvol2018` —
-   the only admissible multi-year test of the task-supervised encoder.
-3. Write the final verdict from that backtest's paired DM tests.
+**The clean-protocol supervised encoder collapses out-of-period.** ftvol2018 (train < 2017 on the
+corrected corpus, epoch selected on 2017 at filing IC 0.635, frozen, full-text windowed encode)
+on the admissible 2018–2024 expanding-window backtest:
+
+| lane | mean IC | paired vs struct+tfidf | paired vs structured [hgb] |
+|---|---|---|---|
+| struct+enc[ftvol2018] [ridge] | 0.504 | −0.057 (p=0.087) | −0.007 (p=0.83) |
+| struct+enc[ftvol2018] [hgb] | 0.497 | −0.064 (p=0.097) | −0.014 (p=0.64) |
+| struct+tfidf [sparse] (ref) | 0.561 | — | +0.050 (p=0.11) |
+
+Under the honest protocol the task-supervised embeddings add **nothing over structured features
+alone** (Δ≈0 vs structured) and lose to the count model by ~0.06 IC. The in-period strength was
+real (0.635 filing IC on the selection year) — it just does not transfer forward: the original
+ftvol's val-2025 "parity" came from training on all pre-2025 labels + epoch selection on the eval
+year. Combined with the val-2025 grid: **no encoder beats struct+tfidf under any admissible
+protocol.** Decision-tree branch: the "all null" row — with two characterization upgrades:
+
+1. **Task alignment closes the in-period gap, forward transfer erases it.** Generic encoders
+   (dual/sbert/bge) lose everywhere; vol-supervised encoders tie only when their training window
+   covers the evaluation era. The text→vol signal a dense encoder learns is era-specific, while
+   TF-IDF's lexical level features + cheap annual refit stay current by construction. (One fair
+   caveat: the frozen encoder faces a 1–8-year staleness handicap that the annually-refit TF-IDF
+   lanes do not; per-window encoder retraining — 12 GPU fine-tunes — would remove it, but the
+   deploy-realistic single data point of that kind, original-ftvol→2025, still only ties.)
+2. **The benchmark is now defended, not just asserted:** struct+tfidf 0.614 IC (12-yr, t=10.4),
+   R² 0.226 val-2025; text increment over the fair structured[ridge] baseline +0.011 (p=0.057)
+   with a large accuracy (DM) edge; every challenger — heads, SVD, five encoders, three poolings,
+   topics, change features (lexical + semantic), EVERYTHING fusions — beaten or tied by it under
+   fair, leakage-audited conditions.
 
 ## Decision tree → conclusion (every branch a positive headline)
 
@@ -147,6 +170,9 @@ every non-TF-IDF row so far — the lexical block earns its place on level accur
 
 ## Run log
 
+- 2026-07-04 (evening) — job 3527629 (h200_3g.71gb, 20 epochs batch 128): ftvol2018 trained
+  (best 2017 filing IC 0.635 @ epoch 19), windowed encode, admissible 2018–2024 backtest.
+  RESULT: 0.497–0.504 IC, ≈0 over structured, −0.06 vs struct+tfidf → FINAL VERDICT above.
 - 2026-07-04 — E3 backtests re-run (both windows) with the complete clean change columns +
   structured[ridge] lane + paired-vs-struct+tfidf table baked in. Anchors reproduced exactly.
   Semantic change adds nothing (E2 closed). Remaining open: the ftvol2018 clean retrain
