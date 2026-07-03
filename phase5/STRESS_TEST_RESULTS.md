@@ -43,16 +43,26 @@ learned/multimodal model beat it? All numbers below are on the **P0-corrected pa
 | **structured [ridge]** | **0.546 (5.6)** | **0.603 (9.9)** |
 | tfidf+lag [sparse] | 0.499 (5.2) | 0.558 (9.3) |
 | struct+tfidf [sparse] | 0.561 (5.9) | 0.614 (10.4) |
-| struct+change [hgb] | 0.501 (5.0) | 0.578 (9.0) |
-| struct+tfidf+change [sparse] | 0.559 (6.0) | 0.612 (10.7) |
+| struct+change [hgb] (full clean cols) | 0.492 (4.8) | 0.575 (8.7) |
+| struct+tfidf+change [sparse] (full clean cols) | 0.550 (5.9) | 0.606 (10.5) |
+
+(change lanes re-run 2026-07-04 with the complete semantic+shape columns, minus the
+label-trained-encoder cols `chg_enc_cos_volaware/ftvol`, which would leak test-year label
+information through the encoder into a pre-2025 backtest.)
 
 Paired across-years vs **structured [ridge]** (the fair baseline):
 
 | condition | 7-yr ΔIC (p) | 12-yr ΔIC (p) |
 |---|---|---|
 | struct+tfidf | +0.016 (0.098) | **+0.011 (0.057)** |
-| struct+tfidf+change | +0.013 (0.226) | +0.009 (0.163) |
+| struct+tfidf+change (full clean cols) | +0.005 (—) | +0.004 (—) |
 | structured [hgb] | −0.034 (0.152) | −0.019 (0.180) |
+
+**Semantic-change verdict (E2 closed, 2026-07-04):** with the complete clean change set
+(lexical + `chg_enc_cos_dual/sbert/bge` + `chg_new_para_frac`), struct+tfidf+change sits *below*
+struct+tfidf on both windows (−0.011 p=0.37 / −0.007 p=0.28 paired) and struct+change sits below
+structured. Disclosure-change features — lexical or semantic — add no incremental volatility
+signal over the level TF-IDF representation. The Lazy-Prices-extension branch is null.
 
 vs the weaker structured [hgb]: struct+tfidf +0.050 (p=0.114) 7-yr / +0.030 (p=0.113) 12-yr —
 the old-style comparison, kept for reference. structured [hgb] vs lagged: +0.059 (p=0.007) 12-yr —
@@ -137,6 +147,11 @@ every non-TF-IDF row so far — the lexical block earns its place on level accur
 
 ## Run log
 
+- 2026-07-04 — E3 backtests re-run (both windows) with the complete clean change columns +
+  structured[ridge] lane + paired-vs-struct+tfidf table baked in. Anchors reproduced exactly.
+  Semantic change adds nothing (E2 closed). Remaining open: the ftvol2018 clean retrain
+  (`contrastive/run_ftvol2018.sh`, GPU) — its 2018–2024 paired DM test vs struct+tfidf is the
+  final verdict.
 - 2026-07-03 (morning) — job 3527358 completed: ftvol + bge full-text embeddings cached (all 5
   encoders done). change_features rebuilt with semantic (sbert/volaware) + shape columns;
   chg_new_para_frac populated for the first time (median 0.27). Full val-2025 grid run:
