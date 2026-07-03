@@ -67,13 +67,14 @@ def parse_args():
 
 
 # --------------------------------------------------------------------------------- shared
-def build_blocks(panel):
+def build_blocks(panel, backtest=False):
     Xstr, scols = E.structured_matrix(panel)
     if Xstr is None:
         raise SystemExit("market_features.parquet missing — run build_market_features.py first")
     lag = panel[["log_lag"]].to_numpy()
     base = np.hstack([lag, Xstr])
-    chg, ccols = E.change_matrix(panel)
+    # backtest lanes must not see change columns from label-trained encoders (test-year leakage)
+    chg, ccols = E.change_matrix(panel, exclude_label_trained=backtest)
     return lag, base, Xstr, scols, chg, ccols
 
 
@@ -256,7 +257,8 @@ def run_backtest(args):
     print(f"panel {len(panel):,} | test years {test_years[0]}..{test_years[-1]} "
           f"({len(test_years)}) | fixed={E.USE_FIXED}")
 
-    lag, base, Xstr, scols, chg, ccols = build_blocks(panel)
+    lag, base, Xstr, scols, chg, ccols = build_blocks(panel, backtest=True)
+    print(f"change cols (label-trained-encoder cols excluded): {ccols}")
     tdf2 = panel.copy()
     for i, c in enumerate(scols):
         tdf2[c] = Xstr[:, i]

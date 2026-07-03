@@ -201,14 +201,25 @@ def call_matrix(df):
 CHANGE_FEATURES = ROOT / "datasets" / f"change_features{CACHE_SUFFIX}.parquet"
 
 
-def change_matrix(df):
+LABEL_TRAINED_ENCODERS = ("volaware", "ftvol")  # trained on pre-2025 vol labels (regression / decile pairing)
+
+
+def change_matrix(df, exclude_label_trained=False):
     """Merge disclosure-change features (build_change_features.py) onto panel rows by
     (ticker, fiscal_year). Backward-looking (this filing vs the firm's previous one) ->
-    leakage-free, valid in the backtest. Returns (None, []) if not built."""
+    leakage-free, valid in the backtest. Returns (None, []) if not built.
+
+    exclude_label_trained: drop chg_enc_cos_* columns computed from encoders that were trained
+    with pre-2025 volatility labels — in a pre-2025 backtest those similarities carry test-year
+    label information through the encoder, so backtest lanes must not see them. (ftvol2018-style
+    era-cutoff encoders keep their suffix out of LABEL_TRAINED_ENCODERS and remain admissible.)"""
     if not CHANGE_FEATURES.exists():
         return None, []
     cf = pd.read_parquet(CHANGE_FEATURES)
     cols = [c for c in cf.columns if c.startswith("chg_")]
+    if exclude_label_trained:
+        bad = tuple(f"chg_enc_cos_{e}" for e in LABEL_TRAINED_ENCODERS)
+        cols = [c for c in cols if not c.startswith(bad)]
     merged = df[["ticker", "fiscal_year"]].merge(cf[["ticker", "fiscal_year"] + cols],
                                                  on=["ticker", "fiscal_year"], how="left")
     return merged[cols].to_numpy(dtype=float), cols
