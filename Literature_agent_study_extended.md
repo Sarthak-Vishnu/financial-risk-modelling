@@ -232,15 +232,20 @@ sentence (≤512 tokens), then a sentence-level Transformer aggregates sentence 
 financial-NLP precedent for encoding long documents by processing fixed-length segments and
 pooling. The flat sliding-window + mean-pool approach used here is the simplified variant.
 
-### General NLP Precedent — SBERT
+### General NLP Precedent — Sliding-Window Chunking
 
-> ✅ **Reimers, N. & Gurevych, I. (2019). "Sentence-BERT: Sentence Embeddings using Siamese
-> BERT-Networks." *EMNLP-IJCNLP 2019*.**
-> `Literature/[2019; EMNLP-IJCNLP] Sentence-BERT...`
+> ✅ **Beltagy, I., Peters, M.E. & Cohan, A. (2020). "Longformer: The Long-Document
+> Transformer." arXiv:2004.05150.**
+> `Literature (new)/` (added 2026-07-07)
 
-Section 4.2 explicitly describes the standard approach for documents longer than the BERT context
-window: split into overlapping segments, encode each, mean-pool the representations. Canonical
-general-NLP precedent for flat chunking + mean-pooling.
+Section 2 ("Task-specific Models for Long Documents", p. 3), PDF-verified quote: "Another
+approach chunks the document into chunks of length 512 (could be overlapping), processes each
+chunk separately, then combines the activations with a task specific model (Joshi et al., 2019)."
+Cite for the claim that chunk-encode-combine is recognised prior practice for long documents.
+Note the framing: Longformer presents it as a known workaround (motivation for their
+architecture), not an endorsement. Do NOT cite BERT (Devlin et al. 2019) for this claim — the
+paper contains no sliding-window or chunking discussion (verified; no Appendix E exists). Do NOT
+cite SBERT either (failed verification, round 1). *(See Verification Log.)*
 
 ### Paragraph-Level Encoding in Financial Filings
 
@@ -252,7 +257,9 @@ Uses 256-token paragraphs as the encoding unit throughout, corroborating the par
 principle and the convention of truncating/padding to a fixed token budget.
 
 **Note:** No single paper canonically defines sliding-window + mean-pooling specifically for 10-K
-filings. Cite SBERT (general NLP precedent) + HTML (financial application) together — sufficient.
+filings. Final verified citation set for the practice: Longformer §2 (general prior practice) +
+HTML / Yang et al. 2020 (financial hierarchical application) + Chiu et al. 2025 (256-token
+paragraph unit in filings).
 
 ---
 
@@ -304,8 +311,12 @@ time regimes, justifying why a model trained on one period may not transfer clea
 > ✅ **Su, Y. et al. (2025). "FinMTEB: Finance Massive Text Embedding Benchmark." *EMNLP 2025*.**
 > `Literature/[2025; EMNLP] FinMTEB Finance Massive Text Embedding Benchmark.pdf`
 
-Evaluates sentence encoders across time periods and documents temporal distribution shift as a
-systematic challenge in financial NLP, including for task-specific fine-tuned models.
+*(Corrected after PDF verification — see Verification Log.)* FinMTEB contains NO across-time
+evaluation and no temporal-shift analysis; do not cite it for temporal drift. Its relevant
+finding is that bag-of-words representations outperform dense embedding models on financial
+STS tasks — cite it in the encoder-grid discussion (why count-based text representations beating
+dense ones on financial text is a documented phenomenon), not in the temporal-drift framing.
+The temporal-drift claim rests on Lu et al. (2019) and Magner et al. (2025) alone.
 
 **For the general concept drift framing:**
 > ✅ **Lu, J., Liu, A., Dong, F. & Gama, J. (2019). "Learning under Concept Drift: A Review."
@@ -347,13 +358,13 @@ across years.
 | 4d | IC magnitude benchmarks | Grinold & Kahn (2000) | McGraw-Hill (book) | ⚠️ Book |
 | 4d | Volatility forecastability (R² 40–70%) | Corsi (2009) | J. Financial Econometrics | ✅ Yes |
 | 5 | Hierarchical chunk + pool (financial) | Yang et al. HTML (2020) | WWW 2020 | ✅ Yes |
-| 5 | Sliding-window chunk + mean-pool (NLP) | Reimers & Gurevych SBERT (2019) | EMNLP-IJCNLP | ✅ Yes |
+| 5 | Sliding-window chunk + mean-pool (NLP) | Beltagy et al. Longformer (2020) §2 | arXiv | ✅ Yes |
 | 5 | Paragraph-level encoding (financial) | Chiu et al. (2025) | EMNLP | ✅ Yes |
 | 6 | Fair ablation / confounded comparisons | Lipton & Steinhardt (2019) | ACM Queue | ⚠️ No |
 | 7 | Task-supervised encoder → volatility | Qin & Yang (2019) | ACL | ✅ Yes |
 | 7 | Task-supervised encoder → volatility | Yang et al. HTML (2020) | WWW 2020 | ✅ Yes |
 | 7 | Temporal distribution shift in fin. NLP | Magner et al. (2025) | Finance Res. Lett. | ✅ Yes |
-| 7 | Temporal distribution shift in fin. NLP | FinMTEB Su et al. (2025) | EMNLP | ✅ Yes |
+| 7 | BoW > dense embeddings on financial STS | FinMTEB Su et al. (2025) | EMNLP | ✅ Yes |
 | 7 | Concept drift definition / survey | Lu, Liu, Dong & Gama (2019) | IEEE TKDE | ✅ Yes |
 
 ---
@@ -362,4 +373,40 @@ across years.
 Three remaining without a PDF are books (Lopez de Prado 2018, Grinold & Kahn 2000) or a low-priority
 optional entry (Kravet & Muslu 2013, Lipton & Steinhardt 2019) — all citable without a local PDF.
 
-*Last updated: 2026-07-06.*
+---
+
+## Verification Log (2026-07-07)
+
+Two claims from the 2026-07-06 version were checked against the PDFs and failed verification:
+
+1. **SBERT (Reimers & Gurevych 2019) long-document claim: NOT SUPPORTED.** Section 4.2 of the
+   paper is "Supervised STS" (sentence-pair evaluation); the paper never discusses long documents,
+   overlapping windows, or pooling of segment embeddings. The claim was fabricated. Replaced by
+   Beltagy et al. (2020) Longformer §3.2 (which explicitly describes chunk-then-combine as the
+   standard long-document baseline) and BERT Appendix E (Devlin et al. 2019).
+2. **FinMTEB (Su et al. 2025) temporal-shift claim: NOT SUPPORTED.** The paper benchmarks 15
+   models across 64 datasets by task type; it contains no across-time evaluation and no
+   temporal-drift analysis. Dropped from the temporal-drift framing (Lu et al. 2019 and Magner
+   et al. 2025 carry that claim); retained only for its bag-of-words-versus-dense finding on
+   financial STS.
+
+**Round 2 (2026-07-07, after downloading the Longformer and BERT PDFs):** the round-1
+replacements themselves failed verification and were corrected again.
+
+3. **Longformer §3.2 claim: NOT SUPPORTED (wrong section, fabricated quote).** §3.2 is
+   "Implementation" (CUDA kernels). The real passage is in §2, p. 3: "Another approach chunks the
+   document into chunks of length 512 (could be overlapping), processes each chunk separately,
+   then combines the activations with a task specific model (Joshi et al., 2019)." Corrected to
+   cite §2, with the caveat that Longformer frames chunking as a known workaround, not an
+   endorsement.
+4. **BERT Appendix E claim: NOT SUPPORTED (appendix does not exist).** The BERT paper has
+   appendices A–C only and contains no sliding-window, chunking, or stride discussion anywhere.
+   Dropped entirely from this claim.
+
+Final verified citation set for long-document windowing: Longformer §2 + Yang et al. (2020)
+HTML + Chiu et al. (2025). All three PDF-verified.
+
+All other citations in this file were spot-checked for author/venue/year plausibility without
+issues, but only the claims listed in this log were verified against PDFs.
+
+*Last updated: 2026-07-07 (verification round 2).*
