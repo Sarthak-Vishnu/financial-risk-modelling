@@ -3,7 +3,7 @@
 #SBATCH --partition=Teaching
 #SBATCH --gres=gpu:h200_1g.18gb:1
 #SBATCH --nodelist=saxa
-#SBATCH --time=48:00:00
+#SBATCH --time=12:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
