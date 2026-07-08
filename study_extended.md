@@ -39,11 +39,13 @@ variance in the volatility level the model explains. Ranking is the primary lens
 economic use of such a model is cross-sectional (which firms are riskier than which), while the
 level is dominated by market-wide conditions.
 
-For context on magnitudes, Grinold and Kahn (2000) establish that an IC of 0.05 to 0.10 is
-considered good for cross-sectional return prediction. Volatility is a far more forecastable
-quantity than returns: Corsi (2009) shows that the HAR-RV model reaches R² of 40 to 70 percent for
-realised-volatility forecasting using only past volatility, whereas return-prediction R² is
-typically below 2 percent. ICs in the range 0.5 to 0.6 for volatility ranking are therefore
+For context on magnitudes, Grinold and Kahn (1999) provide a concrete benchmark: an information
+coefficient of about 0.06 already implies an information ratio above one, which places a forecaster
+in the top decile of active managers, even though such an IC corresponds to calling the direction
+of returns correctly only about 53 percent of the time. Volatility is a far more forecastable
+quantity than returns: Corsi (2009, Table 4) reports in-sample HAR-RV R² of 0.565 for USD/CHF,
+0.707 for the S&P 500 and 0.236 for US Treasury bonds using only past realised volatility, whereas
+return-prediction R² is typically below 2 percent. ICs in the range 0.5 to 0.6 for volatility ranking are therefore
 plausible and should be judged against a persistence baseline, not against zero.
 
 ### 0.2 Dataset
@@ -188,8 +190,9 @@ it (structured plus TF-IDF went from 0.611 to 0.610 on the validation year). Cor
 of the pairs and changing the answer by one thousandth is itself informative: it means year-stale
 risk text predicts volatility almost exactly as well as current risk text, which is direct
 evidence that Item 1A language is highly persistent from year to year. This connects to the
-disclosure-change literature. Cohen, Malloy and Nguyen (2020) built their "Lazy Prices" result on
-precisely the observation that most filings change very little year over year. Campbell et al.
+disclosure-change literature. Cohen, Malloy and Nguyen (2020) documented that most 10-K filings
+change very little from year to year, and that the rare changes which do occur predict returns
+because investors under-react to them. Campbell et al.
 (2014) showed that risk-factor disclosures are informative rather than empty boilerplate. Our
 finding is consistent with both: the text carries real signal (Part III shows it survives every
 control), and that signal sits in the persistent level of the language rather than in its
@@ -389,8 +392,8 @@ years.
 ### IV.1 The expanding-window backtest
 
 The protocol is the standard walk-forward design for financial prediction (the reference treatment
-of why k-fold cross-validation is inappropriate for financial time series, and of walk-forward
-evaluation and lookahead bias generally, is Lopez de Prado 2018, chapters 4 and 7). For each test
+of why k-fold cross-validation is inappropriate for financial time series is Lopez de Prado 2018,
+chapter 7, and of walk-forward evaluation and lookahead bias generally, chapters 11 and 12). For each test
 year Y from the start year to 2024, every model is trained on filings from years strictly before
 Y and scored on year Y, exactly as a deployed model would have been. Two windows are reported: a
 twelve-year window (2013 to 2024) and a seven-year window (2018 to 2024). Comparisons between
@@ -480,10 +483,11 @@ which bounds how much the handicap can be hiding.
 ## Part V — Disclosure-change features (the Lazy-Prices branch)
 
 Cohen, Malloy and Nguyen (2020) showed that year-over-year changes in 10-K text predict returns,
-with the alpha arising because most filings change very little. The boilerplate-persistence
-finding of Part I.1 makes this branch a natural extension: if the level of risk language is
-persistent, perhaps the changes carry incremental information about volatility. Kravet and Muslu
-(2013) report exactly that for risk-word counts.
+with the alpha arising because investors under-react to the changes that do occur. The
+boilerplate-persistence finding of Part I.1 makes this branch a natural extension: if the level of
+risk language is persistent, perhaps the changes carry incremental information about volatility.
+Kravet and Muslu (2013) report exactly that: annual increases in the volume of risk disclosure are
+associated with higher stock-return volatility.
 
 For each consecutive firm-year filing pair, the following features were built
 (`dataset_config/build_change_features.py`): TF-IDF cosine similarity between the two filings
@@ -598,11 +602,18 @@ longer be cited.
 *Sources for verification: `phase5/STRESS_TEST_RESULTS.md` (all stress-test tables),
 `phase5/out/stress_grid_*.json` (machine-readable results), `original_pipeline_details.md`
 (original pipeline), `Literature_agent_study_extended.md` (citation provenance; the verification
-log at the end of that file records the claims that failed PDF verification across two rounds on
-2026-07-07 and their final replacements, all already reflected in this document: the
-long-document windowing precedent is Beltagy et al. 2020 Section 2 with Yang et al. 2020 and
-Chiu et al. 2025, with SBERT and BERT both dropped from that claim, and FinMTEB contains no
-temporal-shift analysis and is cited only for its bag-of-words-versus-dense finding). Momentum is deliberately cited through Ang et al. (2006), where it
+log at the end of that file records a full four-round PDF pass completed on 2026-07-07, in which
+every content, numeric and bibliographic claim was checked against its source PDF, and all
+corrections are already reflected in this document. The load-bearing ones: the long-document
+windowing precedent is Beltagy et al. 2020 Section 2 with Yang et al. 2020 and Chiu et al. 2025
+(SBERT and BERT dropped from that claim); FinMTEB contains no temporal-shift analysis and is cited
+only for its bag-of-words-versus-dense finding; the Corsi 2009 R² figures are the specific Table 4
+values rather than a blanket range; the Lazy-Prices alpha is attributed to investor under-reaction
+rather than to filings changing little; the Grinold and Kahn benchmark is the concrete IC-to-
+information-ratio result; and the Lopez de Prado references are chapters 7, 11 and 12. Two
+bibliographic housekeeping items remain open in the citations file, neither a content error: the
+Grinold and Kahn edition year and the Diebold and Mariano 1995-versus-2002 reprint choice.)
+Momentum is deliberately cited through Ang et al. (2006), where it
 appears as a standard control variable, rather than through Jegadeesh and Titman (1993), which
 could not be accessed for reading; since momentum enters this study only as a control feature,
 the accessible precedent is the appropriate one. Add Jegadeesh and Titman as a secondary
