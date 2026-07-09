@@ -228,7 +228,7 @@ squared errors are compared by Diebold-Mariano tests.
 
 ---
 
-## Part II — Tier 1: primary results
+## Part II — Primary results
 
 These are the primary results of the study. The evaluation design is the single-split design of
 the original pipeline (train before 2025, evaluate on 2025), which is the design most comparable
@@ -261,7 +261,7 @@ head.
 | **struct+tfidf [sparse]** | **0.603** | [0.534, 0.670] | **0.226** | reference |
 
 Three statements summarise this table. First, the structured baseline alone beats the entire
-original text-only pipeline: 0.591 against the old TF-IDF-plus-lagged floor of 0.541. The standard
+original text-only pipeline: 0.591 against the TF-IDF-plus-lagged floor of 0.541. The standard
 quantitative characteristics rank firm volatility better than any text-only method, which
 retroactively explains why the original pipeline's comparisons were all fought below this level.
 Second, text on top of the structured baseline adds: struct+tfidf reaches 0.603 IC and raises
@@ -321,7 +321,7 @@ do requires the clean protocol of Part III.3.
 
 ---
 
-## Part III — Tier 2: the robustness extension
+## Part III — The robustness extension
 
 Everything in this part goes beyond the original evaluation design. It is presented as a
 deliberate methodological adaptation, adopted for a specific reason: the single-year comparison in
