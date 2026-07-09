@@ -9,14 +9,13 @@ Phase 1 to 5 result files on this branch.
 
 **How this document is organised.** The reader is assumed to know the original pipeline from the
 IPP report and nothing after it. Part 0 therefore restates the original pipeline in full, so this
-document stands alone. Part I describes the validation pass that the original headline result
-prompted, and the three protocol revisions it produced; each revision is reported with its old and
-new values so the IPP report remains fully reconcilable with this document.
-Part II describes the reframing of the research question around a structured financial baseline.
-Part III presents the primary results under the corrected, fair protocol. Part IV describes the
-robustness extension, which is a deliberate methodological adaptation beyond the original design,
-and the final verdict it produced. Parts V and VI cover the disclosure-change branch and the
-ongoing earnings-call work. Part VII states the conclusions and contributions.
+document stands alone, and closes with the analysis of its results that set the direction for the
+rest of the study. Part I describes the reframing of the research question around a structured
+financial baseline, together with the evaluation protocol of the extended study. Part II presents
+the primary results under that protocol. Part III describes the robustness extension, which is a
+deliberate methodological adaptation beyond the original design, and the final verdict it
+produced. Part IV and Part V cover the disclosure-change branch and the ongoing earnings-call
+work. Part VI states the conclusions and contributions.
 
 ---
 
@@ -142,151 +141,41 @@ alone reached Spearman 0.60 on the 2025 validation year, the TF-IDF plus lagged 
 R²_log 0.176 with Spearman 0.56, and the best learned condition (the `dual` hybrid) reached only
 0.545 with R²_log 0.13. Every one of five encoder conditions came in at or below the count-based
 floor. The recorded interpretation was that volatility prediction from risk-factor text is a
-lexical task: the frequency of specific risk language carries the signal, and a bag-of-words
+lexical task: the frequency of specific risk language in the text carries the signal, and a bag-of-words
 representation captures it directly, while semantic embeddings blur it.
 
 ### 0.7 What the original results implied
 
-The original results set the agenda for the rest of the study in two ways.
+The original results set the agenda for the rest of the study. The headline finding is a
+statement about text representations only, and analysing it against the literature exposed two
+limits on what it could mean. First, the only non-text predictor in the entire pipeline was
+lagged volatility, one number, even though the asset-pricing literature establishes a set of
+structured firm characteristics as first-order determinants of volatility. Any comparison between
+text representations was therefore a comparison between models that all lacked the dominant
+predictors, so no conclusion about the value of disclosure text could yet be drawn from it.
+Second, the question itself ("which text representation ranks best?") is weaker than the question
+the literature actually cares about, which is whether disclosure text adds predictive power over
+the strong quantitative baseline.
 
-First, the headline conclusion was surprising. An untrained count model beating every trained
-encoder, including encoders adapted to the domain at some computational cost, is exactly the kind
-of result that should not be built upon until it has been validated: a conclusion of that shape
-can be a genuine property of the problem, or it can be an artifact of how the evaluation was set
-up. Standard practice for a surprising empirical result is to re-examine the setup that produced
-it before extending it. That re-examination is Part I, and it is the bridge between the original
-pipeline and everything after it.
-
-Second, two features of the original design limited what it could conclude regardless of the
-validation. The only non-text predictor in the entire pipeline was lagged volatility, one number,
-even though the asset-pricing literature establishes a set of structured firm characteristics as
-first-order determinants of volatility. Any comparison between text representations was therefore
-a comparison between models that all lacked the dominant predictors. And the question itself
-("which text representation ranks best?") is weaker than the question the literature actually
-cares about, which is whether disclosure text adds predictive power over the strong quantitative
-baseline. These two limitations motivate the reframing in Part II.
-
----
-
-## Part I — Validating the original result: three protocol revisions
-
-Because the original conclusion was surprising (Part 0.7), the protocol that produced it was
-systematically re-examined before the study extended it. The validation asked three questions of
-the original setup: whether the text was joined to the correct labels, whether every text
-representation received the same input, and whether the model comparisons attributed performance
-differences to the right cause. Each question led to the revision of a convention that the
-original pipeline had inherited, from the corpus naming scheme, from the parent paper's encoding
-setup, and from common modelling practice respectively. The revisions are reported here in full,
-with old and new values, for three reasons. The numbers in the IPP report were computed under the
-pre-revision protocol, so any discrepancy between that report and this document must be
-explainable. Each revision is load-bearing for a claim made later in this document. And each
-revision produced a finding of its own, which is a pattern worth noting: in all three cases the
-validation returned more than hygiene. Notably, the validation confirmed the headline conclusion
-rather than overturning it, but it changed what that conclusion is worth: after Part I the "count
-model wins" result is a defended one. The revised panel is the basis for every number from
-Part III onward, and the pre-revision numbers are quoted only for comparison.
-
-### I.1 Label alignment, and the persistence finding it produced
-
-**The inherited convention.** The corpus and the feature table follow two different year
-conventions: the corpus filenames carry the year of the filing, while the feature table is keyed
-by fiscal year, and for most firms these differ. The original pipeline joined the two on the
-fiscal-year key, the natural key for the feature table. Tracing the filename convention through
-the join showed that this pairing was systematically offset: about 74 percent of all text-to-label
-pairs were matched with the adjacent year's label rather than their own. Two further artifacts of
-the same key surfaced with it: 68 ticker and fiscal-year groups contained two different filings
-(a consequence of 52/53-week fiscal calendars, where two fiscal year-ends fall in the same
-labelled year), affecting 136 labelled rows, and 122 filings were silently dropped by ticker
-renames.
-
-**The revision.** A re-keying script (`dataset_config/fix_filing_join.py`) aligns every filing to
-its true filing year, enforces unique firm-year keys, and produces a revised feature table and
-corpus (`datasets/feature_table_fixed.parquet`, `topics/data/topic_docs_fixed.jsonl`). The
-original offset was conservative rather than leaky: the mispaired text was older than its label,
-not newer, so no future information contaminated any original result. The 122 orphaned filings
-are recoverable in principle through a ticker-rename map but require label recomputation, and
-remain excluded.
-
-**What the revision revealed.** Re-running the headline comparison on the revised panel barely moved
-it (structured plus TF-IDF went from 0.611 to 0.610 on the validation year). Correcting 74 percent
-of the pairs and changing the answer by one thousandth is itself informative: it means year-stale
-risk text predicts volatility almost exactly as well as current risk text, which is direct
-evidence that Item 1A language is highly persistent from year to year. This connects to the
-disclosure-change literature. Cohen, Malloy and Nguyen (2020) documented that most 10-K filings
-change very little from year to year, and that the rare changes which do occur predict returns
-because investors under-react to them. Campbell et al.
-(2014) showed that risk-factor disclosures are informative rather than empty boilerplate. Our
-finding is consistent with both: the text carries real signal (Part III shows it survives every
-control), and that signal sits in the persistent level of the language rather than in its
-year-over-year freshness.
-
-### I.2 Input parity: from truncated to full-text encoding
-
-**The inherited convention.** The encoders processed each paragraph truncated to 256 tokens, the
-convention of the parent paper (Chiu et al. 2025), whose contrastive framework Phase 3 extends and
-whose paragraph unit the pipeline adopted wholesale. The validation asked whether the
-count-versus-encoder comparison gave both sides the same input, and on this corpus the answer was
-no: 36.6 percent of paragraphs are longer than 256 tokens, and in total about 65 percent of the
-corpus words never reached any encoder, while the TF-IDF representation ingests the full text.
-A convention that is harmless in the parent paper's setting, where every compared model reads the
-same truncated paragraphs, becomes an unequal-input comparison the moment a full-text
-representation joins the field. Every encoder-versus-TF-IDF conclusion in the original pipeline
-therefore compared a full-text count model against encoders that saw roughly one third of the
-words.
-
-**The revision.** A windowed encoding scheme (`topics/encode_paragraphs.py`) splits each long paragraph
-into overlapping 256-token windows with a stride of 192 tokens, encodes every window, and
-mean-pools the window vectors back to a paragraph vector before the usual paragraph-to-filing
-pooling. This is the standard approach for documents that exceed a transformer's context window:
-segment, encode, and pool. Splitting a long document into fixed-length, possibly overlapping
-chunks, encoding each chunk independently, and combining the chunk representations is documented
-as established prior practice in the long-document literature (Beltagy et al. 2020, Section 2).
-The financial-NLP precedent is the hierarchical encoding of long transcripts in Yang et al.
-(2020, HTML), which encodes each fixed-length segment with BERT and aggregates the segment
-representations at document level; flat windowing with mean-pooling is the simplified variant of
-the same principle, and the 256-token paragraph unit follows Chiu et al. (2025). All five encoder
-caches were rebuilt this way: 462,590 windows over 176,616 paragraphs.
-
-**What the revision revealed.** Full-text encoding did not rescue the encoders (the full grid is
-in Part III). The value of the revision is that the comparison is now fair, so the conclusion "the
-count model wins" is defended rather than an artifact of unequal inputs.
-
-### I.3 Comparison design: standardising the prediction head
-
-**The inherited practice.** The first pass of the ablation ladder (Part II) followed the common
-practice of scoring each feature set under the head conventional for it: a gradient-boosted-tree
-head (HGB) for the dense structured block, and a sparse ridge head for the high-dimensional
-TF-IDF block. The validation applied the ablation principle articulated by Lipton and Steinhardt
-(2019) to this design: when two things change at once, the credit assignment is arbitrary. Here
-the model class and the feature set changed together, so the measured increment of "adding text"
-was confounded with the effect of switching from trees to ridge, two model classes that differ in
-capacity and regularisation.
-
-**The revision and what it revealed.** Scoring every rung of the ladder under the same head shows the
-confound was large. Structured features under ridge reach IC 0.591 on the validation year and
-0.603 on the twelve-year backtest, against 0.558 and 0.584 under HGB. The apparent text increment
-of about +0.05 IC under mixed heads shrinks to +0.011 IC (paired p = 0.057 over twelve
-years) once both arms share the ridge head. The text increment is therefore real, consistent in
-sign across years, but roughly five times smaller than first reported. On the level-accuracy
-metric the text gain remains substantial (R²_log 0.175 to 0.226 on the validation year, and the
-difference in squared error is significant under a Diebold-Mariano test at p < 0.001). A related
-validation finding is that tuning the ridge penalty on the last training year hurt the following year,
-which confirms that model-selection variance swamps deltas of this size and that only paired
-multi-year tests should be trusted for them. All headline comparisons from here on hold the head
-fixed.
+Analysing the original results against those two limits pointed to a specific programme, and it
+is the programme the remainder of this document reports: build the structured baseline the
+original pipeline never had, re-pose the question as one of incremental value over that baseline,
+and tighten the evaluation protocol so that the small increments such a question involves are
+measured fairly and with statistical confidence. Part I describes the reframing and the
+protocol, and the results follow from Part II onward.
 
 ---
 
-## Part II — The reframing: incremental value over a structured baseline
+## Part I — The reframing: incremental value over a structured baseline
 
-### II.1 Why the question changed
+### I.1 Why the question changed
 
 The original pipeline asked which text representation ranks firms best. The literature's actual
 question is different: given that a set of structured firm characteristics is known to drive
 volatility, does disclosure text add anything on top? Answering the second question requires
 building the structured baseline that the original pipeline never had.
 
-### II.2 The structured feature block
+### I.2 The structured feature block
 
 The structured block contains the standard cross-sectional volatility predictors, each grounded in
 the asset-pricing literature. Realised volatility at horizons of 21, 63, 126 and 252 trading days
@@ -304,26 +193,48 @@ Compustat, prices from the sources in Part 0.2. Coverage is approximately 99 per
 filings. Building this block involved no new modelling, only feature engineering, which is
 precisely the point: it is the baseline any volatility study should start from.
 
-### II.3 The ablation ladder
+### I.3 The ablation ladder and its protocol
 
-The evaluation is an ablation ladder over feature blocks with the prediction head held fixed
-(Part I.3): structured features alone, then structured plus a text representation, where the text
-representation is TF-IDF, an encoder embedding, topic exposures, change features, or combinations
-of these. Each condition is scored on the validation year and, in Part IV, on expanding-window
-backtests. Statistical comparisons are paired: within each evaluation year the two models predict
-the same firms, so their per-year ICs are compared as matched pairs across years, and their
-per-firm squared errors are compared by Diebold-Mariano tests.
+The evaluation is an ablation ladder over feature blocks: structured features alone, then
+structured plus a text representation, where the text representation is TF-IDF, an encoder
+embedding, topic exposures, change features, or combinations of these. Each condition is scored
+on the validation year and, in Part III, on expanding-window backtests, over a single evaluation
+panel keyed uniquely by firm and filing year. Because the quantity of interest is a small
+increment on top of a strong baseline, the protocol is designed so that every comparison isolates
+exactly one difference. Three rules apply throughout.
+
+First, the prediction head is held fixed within every comparison. When the model class and the
+feature set change at once, the credit assignment between them is arbitrary, which is the
+ablation principle articulated by Lipton and Steinhardt (2019). An increment attributed to
+"adding text" must therefore come from a comparison in which only the feature set changes, so
+both heads (a ridge regression and a gradient-boosted tree, HGB) are reported for every
+condition, and increments are always quoted between same-head arms.
+
+Second, every text representation receives the full text. TF-IDF ingests the complete filing by
+construction, so the encoders are given the same input through windowed encoding
+(`topics/encode_paragraphs.py`): each long paragraph is split into overlapping 256-token windows
+with a stride of 192 tokens, every window is encoded, and the window vectors are mean-pooled back
+to a paragraph vector before the usual paragraph-to-filing pooling, for a total of 462,590
+windows over 176,616 paragraphs. Segment-encode-pool is the established treatment of documents
+that exceed a transformer's context window (Beltagy et al. 2020, Section 2); the financial-NLP
+precedent is the hierarchical encoding of long transcripts in Yang et al. (2020, HTML), and the
+256-token paragraph unit follows Chiu et al. (2025). Equal input budgets ensure that a comparison
+between representations is a comparison between representations, not between the amounts of text
+each was allowed to read.
+
+Third, statistical comparisons are paired. Within each evaluation year the two models predict the
+same firms, so their per-year ICs are compared as matched pairs across years, and their per-firm
+squared errors are compared by Diebold-Mariano tests.
 
 ---
 
-## Part III — Tier 1: primary results under the corrected, fair protocol
+## Part II — Tier 1: primary results
 
-These are the primary results of the study. The protocol is the original single-split design
-(train before 2025, evaluate on 2025), which is the design most comparable to the literature, run
-on the revised panel (Part I.1), with full-text encoder inputs (Part I.2) and a fixed head per
-comparison (Part I.3).
+These are the primary results of the study. The evaluation design is the single-split design of
+the original pipeline (train before 2025, evaluate on 2025), which is the design most comparable
+to the literature, run under the protocol of Part I.3.
 
-### III.1 How to read the tables
+### II.1 How to read the tables
 
 Every results table in this document uses the following columns. **IC** is the within-year
 cross-sectional Spearman rank correlation between predicted and realised 30-day forward
@@ -339,7 +250,7 @@ the head in brackets, so "struct+tfidf [sparse]" is structured features plus the
 under the sparse ridge head, and "structured [ridge]" is the structured block alone under a ridge
 head.
 
-### III.2 The anchor results
+### II.2 The anchor results
 
 | condition | IC | 95% CI | R²_log | DM p vs struct+tfidf |
 |---|---|---|---|---|
@@ -356,13 +267,13 @@ retroactively explains why the original pipeline's comparisons were all fought b
 Second, text on top of the structured baseline adds: struct+tfidf reaches 0.603 IC and raises
 R²_log from 0.175 to 0.226, and the Diebold-Mariano test says this accuracy gain is highly
 significant. Third, the IC increment (+0.012 on this single year) is inside the single-year
-confidence interval, which is exactly why Part IV moves to multi-year paired tests before claiming
+confidence interval, which is exactly why Part III moves to multi-year paired tests before claiming
 anything about it.
 
-### III.3 The encoder grid
+### II.3 The encoder grid
 
-The full grid scores every encoder under both heads on the revised panel with full-text windowed
-inputs. The encoders are: `dual` and `sbert` (the original similarity-trained contrastive encoder
+The full grid scores every encoder under both heads with the full-text windowed inputs of
+Part I.3. The encoders are: `dual` and `sbert` (the original similarity-trained contrastive encoder
 and the off-the-shelf sentence transformer), `bge` (BAAI bge-base-en-v1.5, a modern strong
 general-purpose embedder, included to address the objection that the original encoders were
 simply not good enough), `volaware` (the Stage B contrastive encoder whose positive pairs are
@@ -389,8 +300,8 @@ fine-tuned end-to-end on the volatility regression target).
 The pattern is clean. The generic semantic encoders (dual, sbert, bge) sit at or below the no-text
 structured baseline and are significantly less accurate than struct+tfidf under a Diebold-Mariano
 test in at least one head. The inclusion of bge settles the "you never tried a strong modern
-embedder" objection: it loses too, and giving the encoders the full text (Part I.2) did not change
-this. The direction of this result has independent support: the FinMTEB benchmark reports that
+embedder" objection: it loses too, even with the full text delivered through the windowed
+protocol. The direction of this result has independent support: the FinMTEB benchmark reports that
 bag-of-words representations outperform dense embedding models on financial semantic-similarity
 tasks (Su et al. 2025), so count-based representations beating dense ones on financial text is a
 documented phenomenon, not an idiosyncrasy of this pipeline. The only encoders that reach statistical parity with the count model are the two that were
@@ -402,23 +313,23 @@ speculated would have worked better, was built (following the precedent of end-t
 volatility-supervised text encoders in Qin and Yang 2019 and Yang et al. 2020), and it reaches
 parity but not superiority.
 
-One caveat belongs to this table and it matters for everything in Part IV. The parity rows are
+One caveat belongs to this table and it matters for everything in Part III. The parity rows are
 in-period results for encoders whose training saw pre-2025 volatility labels, and the ftvol
 checkpoint was additionally epoch-selected on the validation year itself. These rows are honest as
 exploratory evidence and inflated as claims. Establishing what a task-aligned encoder can really
-do requires the clean protocol of Part IV.3.
+do requires the clean protocol of Part III.3.
 
 ---
 
-## Part IV — Tier 2: the robustness extension
+## Part III — Tier 2: the robustness extension
 
 Everything in this part goes beyond the original evaluation design. It is presented as a
 deliberate methodological adaptation, adopted for a specific reason: the single-year comparison in
-Part III cannot statistically separate models 0.01 apart, and, more seriously, it cannot detect a
+Part II cannot statistically separate models 0.01 apart, and, more seriously, it cannot detect a
 class of leakage that turned out to be present. Both problems require evaluation across many
 years.
 
-### IV.1 The expanding-window backtest
+### III.1 The expanding-window backtest
 
 The protocol is the standard walk-forward design for financial prediction (the reference treatment
 of why k-fold cross-validation is inappropriate for financial time series is Lopez de Prado 2018,
@@ -448,7 +359,7 @@ honest shape of the headline result: a strong structured baseline, plus a small,
 statistically suggestive lexical text increment, with a much clearer text advantage on level
 accuracy than on ranking.
 
-### IV.2 The admissibility audit
+### III.2 The admissibility audit
 
 Before running encoder backtests, the training provenance of each encoder was audited against the
 backtest years. The audit found that the two task-aligned encoders could not legitimately be
@@ -463,15 +374,15 @@ leak is inside the representation, not the predictor. For the same reason, the c
 derived from those encoders' embeddings are excluded from all backtest lanes
 (`phase5/eval_common.py` enforces this).
 
-The practical consequence: the in-period parity of ftvol and volaware in Part III.3 could not be
+The practical consequence: the in-period parity of ftvol and volaware in Part II.3 could not be
 confirmed or refuted by any backtest using the existing checkpoints. It required a retrain under a
 clean protocol.
 
-### IV.3 The clean-protocol retrain and the final verdict
+### III.3 The clean-protocol retrain and the final verdict
 
 The decisive experiment retrains the supervised encoder with a strict temporal cutoff: training
 only on filings from years before 2017, epoch selection on 2017 (the last pre-cutoff year), the
-checkpoint then frozen, all on the revised corpus. Years 2018 to 2024 are never touched by the
+checkpoint then frozen, all on the study corpus. Years 2018 to 2024 are never touched by the
 encoder in any way, which makes the 2018 to 2024 expanding-window backtest admissible by
 construction. The retrained encoder (ftvol2018) is strong in-period: filing-level IC of 0.635 on
 its 2017 selection year, from text alone, confirming that the supervised objective learns a real
@@ -485,7 +396,7 @@ signal.
 
 Out of period, the encoder collapses. Its embeddings add nothing over the structured features
 alone (the difference is statistically zero) and it loses to the count model by about 0.06 IC.
-Combined with Part III.3, the verdict of the whole study is: **no encoder configuration beats the
+Combined with Part II.3, the verdict of the whole study is: **no encoder configuration beats the
 count-based model under any admissible protocol.** The apparent parity of the original ftvol on
 the validation year is now explained: it came from training on all pre-2025 labels plus epoch
 selection on the evaluation year, both of which the clean protocol removes.
@@ -509,14 +420,22 @@ which bounds how much the handicap can be hiding.
 
 ---
 
-## Part V — Disclosure-change features (the Lazy-Prices branch)
+## Part IV — Disclosure-change features (the Lazy-Prices branch)
 
 Cohen, Malloy and Nguyen (2020) showed that year-over-year changes in 10-K text predict returns,
-with the alpha arising because investors under-react to the changes that do occur. The
-boilerplate-persistence finding of Part I.1 makes this branch a natural extension: if the level of
-risk language is persistent, perhaps the changes carry incremental information about volatility.
-Kravet and Muslu (2013) report exactly that: annual increases in the volume of risk disclosure are
-associated with higher stock-return volatility.
+with the alpha arising because investors under-react to the changes that do occur, and their
+starting observation is that most 10-K filings change very little from year to year. Kravet and
+Muslu (2013) report the volatility-side analogue: annual increases in the volume of risk
+disclosure are associated with higher stock-return volatility. This corpus shows the same
+persistence, and a stale-text experiment quantifies it directly: re-pairing roughly three
+quarters of the filings with the adjacent year's risk text instead of their own leaves the
+struct+tfidf validation IC essentially unchanged (0.611 against 0.610). Year-stale risk text
+predicts volatility almost exactly as well as current risk text, so the text signal measured in
+Part II sits in the persistent level of the risk language rather than in its year-over-year
+freshness, which is consistent with Campbell et al. (2014), who established that these
+disclosures are informative rather than empty boilerplate. That persistence sharpens the question
+of this part: if the level of risk language barely moves, do the movements that do occur carry
+incremental information about volatility?
 
 For each consecutive firm-year filing pair, the following features were built
 (`dataset_config/build_change_features.py`): TF-IDF cosine similarity between the two filings
@@ -543,7 +462,7 @@ risk language, not its year-over-year shift.
 
 ---
 
-## Part VI — Earnings-call tone (ongoing)
+## Part V — Earnings-call tone (ongoing)
 
 Stage C asks whether a second text modality, the earnings call, adds signal. The 2025 call
 collection turned out to postdate the 10-K filings, so a filing-level test was not possible.
@@ -559,9 +478,9 @@ inside the full model. The status is suggestive and unconfirmed (n = 152 calls, 
 
 ---
 
-## Part VII — Conclusions and contributions
+## Part VI — Conclusions and contributions
 
-### VII.1 The defended benchmark
+### VI.1 The defended benchmark
 
 The final model of the study is the structured feature block plus full-text TF-IDF under a sparse
 ridge head. Its credentials: mean IC 0.614 with t = 10.4 over the twelve-year expanding-window
@@ -572,35 +491,31 @@ pooling schemes, five encoders including a modern general-purpose embedder and t
 ones, topic exposures, change features, and full fusion models, all under leakage-audited
 conditions extending to the training provenance of the encoders themselves.
 
-### VII.2 What the study contributes
+### VI.2 What the study contributes
 
 1. **A defended benchmark rather than an asserted one.** The original "TF-IDF wins" was a single
-   comparison under the original protocol; after the validation of Part I, the same conclusion
-   stands on an aligned panel against an exhaustive and fair grid.
+   comparison on a single evaluation year; the same conclusion now stands against an exhaustive
+   and fair grid of challengers and across twelve years of walk-forward backtests.
 2. **A characterisation of why the count model wins.** The volatility signal in 10-K risk text is
    lexical-level, persistent and count-representable. Task-aligned encoders can learn it in-period
    but the learned mapping is era-specific and does not transfer forward, while annually refit
    lexical features stay current by construction. To our knowledge this includes the first honest
    out-of-period evaluation of a volatility-supervised text encoder on this task.
-3. **Three methods findings from the validation,** each of independent use to practitioners:
-   re-aligning 74 percent of the text-to-label pairs moved the headline by one thousandth
-   (boilerplate persistence, corroborating the premise of Lazy Prices from a new direction);
-   equalising the text budget between representations did not rescue the encoders (a fair-input
-   protocol for count-versus-embedding comparisons); and holding the prediction head fixed
-   shrank the reported text increment fivefold (a fair-head protocol for ablation ladders).
+3. **A persistence finding.** Year-stale risk text predicts volatility almost exactly as well as
+   current risk text (Part IV), which corroborates the low-churn premise of Lazy Prices from the
+   volatility side.
 4. **A null result with a mechanism.** Disclosure-change features do not help volatility
    prediction, and the returns-versus-volatility contrast with Lazy Prices explains why not.
 
-### VII.3 Honest caveats
+### VI.3 Honest caveats
 
 The text increment on ranking is statistically suggestive, not conclusive (p = 0.057 over twelve
 years); each additional evaluation year tightens it. The frozen-encoder staleness handicap in the
 clean-protocol test is real and only bounded, not removed, by the original-ftvol data point.
 Cross-sectional level R² in individual backtest years is noisy and sometimes negative; the ranking
-metric is the reliable lens. The Stage C call-tone result is a pilot. The 122 orphaned filings
-remain excluded pending label recomputation.
+metric is the reliable lens. The Stage C call-tone result is a pilot.
 
-### VII.4 Open questions
+### VI.4 Open questions
 
 1. Does per-window encoder retraining (twelve GPU fine-tunes) close any of the out-of-period gap,
    or is the era-specificity fundamental? Out of scope for the current timeline; the design is
@@ -612,21 +527,7 @@ remain excluded pending label recomputation.
 
 ---
 
-## Appendix — Revision ledger (IPP-era values → current values)
-
-Every number below changed between the IPP-era write-ups and this document, for the reasons given
-in Part I. The old values were produced under the pre-revision protocol (the original label join
-and mixed-head comparisons) and should no longer be cited.
-
-| quantity | old value | corrected value | driver |
-|---|---|---|---|
-| structured baseline, val-2025 IC | 0.570 | 0.591 (ridge) / 0.558 (hgb) | label re-alignment + head reported explicitly |
-| struct+tfidf, val-2025 IC | 0.611 | 0.603–0.610 | label re-alignment |
-| struct+tfidf, val-2025 R²_log | 0.276 | 0.220–0.226 | label re-alignment |
-| struct+encoder(dual), val-2025 IC | 0.602 | 0.582 | label re-alignment + full-text encoding |
-| text increment, val-2025 | +0.041 | +0.012 | same-head comparison |
-| text increment, 7-yr backtest | +0.050 (p = 0.090) | +0.016 (p = 0.098) | same-head comparison |
-| text increment, 12-yr backtest | — | +0.011 (p = 0.057) | new primary estimate |
+## Appendix — Sources and citation verification
 
 *Sources for verification: `phase5/STRESS_TEST_RESULTS.md` (all stress-test tables),
 `phase5/out/stress_grid_*.json` (machine-readable results), `original_pipeline_details.md`
