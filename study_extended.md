@@ -9,8 +9,9 @@ Phase 1 to 5 result files on this branch.
 
 **How this document is organised.** The reader is assumed to know the original pipeline from the
 IPP report and nothing after it. Part 0 therefore restates the original pipeline in full, so this
-document stands alone. Part I describes three corrections that were made to the original pipeline
-after an internal audit, and explains why each one is disclosed rather than silently applied.
+document stands alone. Part I describes the validation pass that the original headline result
+prompted, and the three protocol revisions it produced; each revision is reported with its old and
+new values so the IPP report remains fully reconcilable with this document.
 Part II describes the reframing of the research question around a structured financial baseline.
 Part III presents the primary results under the corrected, fair protocol. Part IV describes the
 robustness extension, which is a deliberate methodological adaptation beyond the original design,
@@ -144,48 +145,69 @@ floor. The recorded interpretation was that volatility prediction from risk-fact
 lexical task: the frequency of specific risk language carries the signal, and a bag-of-words
 representation captures it directly, while semantic embeddings blur it.
 
-### 0.7 The two structural limitations
+### 0.7 What the original results implied
 
-Two features of this design limited what it could conclude. First, the only non-text predictor in
-the entire pipeline was lagged volatility, one number, even though the asset-pricing literature
-establishes a set of structured firm characteristics as first-order determinants of volatility.
-Any comparison between text representations was therefore a comparison between models that all
-lacked the dominant predictors. Second, the question itself ("which text representation ranks
-best?") is weaker than the question the literature actually cares about, which is whether
-disclosure text adds predictive power over the strong quantitative baseline. These two limitations
-motivated everything that follows.
+The original results set the agenda for the rest of the study in two ways.
+
+First, the headline conclusion was surprising. An untrained count model beating every trained
+encoder, including encoders adapted to the domain at some computational cost, is exactly the kind
+of result that should not be built upon until it has been validated: a conclusion of that shape
+can be a genuine property of the problem, or it can be an artifact of how the evaluation was set
+up. Standard practice for a surprising empirical result is to re-examine the setup that produced
+it before extending it. That re-examination is Part I, and it is the bridge between the original
+pipeline and everything after it.
+
+Second, two features of the original design limited what it could conclude regardless of the
+validation. The only non-text predictor in the entire pipeline was lagged volatility, one number,
+even though the asset-pricing literature establishes a set of structured firm characteristics as
+first-order determinants of volatility. Any comparison between text representations was therefore
+a comparison between models that all lacked the dominant predictors. And the question itself
+("which text representation ranks best?") is weaker than the question the literature actually
+cares about, which is whether disclosure text adds predictive power over the strong quantitative
+baseline. These two limitations motivate the reframing in Part II.
 
 ---
 
-## Part I — Three corrections to the original pipeline
+## Part I — Validating the original result: three protocol revisions
 
-Before extending the pipeline, an internal audit re-examined its foundational choices. The audit
-found two data defects and one evaluation defect. All three are disclosed here rather than
-silently fixed, for three reasons. The numbers in the IPP report were computed on the flawed
-panel, so any discrepancy between that report and this document must be explainable. Each fix is
-load-bearing for a claim made later in this document. And each fix produced a finding of its own.
-The corrected panel is the basis for every number from Part III onward, and the pre-fix numbers
-are quoted only for comparison.
+Because the original conclusion was surprising (Part 0.7), the protocol that produced it was
+systematically re-examined before the study extended it. The validation asked three questions of
+the original setup: whether the text was joined to the correct labels, whether every text
+representation received the same input, and whether the model comparisons attributed performance
+differences to the right cause. Each question led to the revision of a convention that the
+original pipeline had inherited, from the corpus naming scheme, from the parent paper's encoding
+setup, and from common modelling practice respectively. The revisions are reported here in full,
+with old and new values, for three reasons. The numbers in the IPP report were computed under the
+pre-revision protocol, so any discrepancy between that report and this document must be
+explainable. Each revision is load-bearing for a claim made later in this document. And each
+revision produced a finding of its own, which is a pattern worth noting: in all three cases the
+validation returned more than hygiene. Notably, the validation confirmed the headline conclusion
+rather than overturning it, but it changed what that conclusion is worth: after Part I the "count
+model wins" result is a defended one. The revised panel is the basis for every number from
+Part III onward, and the pre-revision numbers are quoted only for comparison.
 
-### I.1 The label-join defect
+### I.1 Label alignment, and the persistence finding it produced
 
-**The defect.** The corpus filenames carry the year of the filing, but the feature table is keyed
-by fiscal year, and for most firms these differ. In addition, 68 ticker and fiscal-year groups
-contained two different filings (an artifact of 52/53-week fiscal calendars, where two fiscal
-year-ends fall in the same labelled year), and every merge in the pipeline keyed on ticker and
-fiscal year. The consequence was that 136 labelled rows attached text to a wrong-year label, 122
-filings were silently dropped because of ticker renames, and, once the filename-year convention
-was traced through, about 74 percent of all text-to-label pairs turned out to be paired with the
-adjacent year's label rather than their own.
+**The inherited convention.** The corpus and the feature table follow two different year
+conventions: the corpus filenames carry the year of the filing, while the feature table is keyed
+by fiscal year, and for most firms these differ. The original pipeline joined the two on the
+fiscal-year key, the natural key for the feature table. Tracing the filename convention through
+the join showed that this pairing was systematically offset: about 74 percent of all text-to-label
+pairs were matched with the adjacent year's label rather than their own. Two further artifacts of
+the same key surfaced with it: 68 ticker and fiscal-year groups contained two different filings
+(a consequence of 52/53-week fiscal calendars, where two fiscal year-ends fall in the same
+labelled year), affecting 136 labelled rows, and 122 filings were silently dropped by ticker
+renames.
 
-**The fix.** A repair script (`dataset_config/fix_filing_join.py`) re-keys every filing by its
-true filing year, enforces unique firm-year keys, and produces a corrected feature table and
+**The revision.** A re-keying script (`dataset_config/fix_filing_join.py`) aligns every filing to
+its true filing year, enforces unique firm-year keys, and produces a revised feature table and
 corpus (`datasets/feature_table_fixed.parquet`, `topics/data/topic_docs_fixed.jsonl`). The
-mismatch was conservative rather than leaky: the mispaired text was older than its label, not
-newer, so no future information contaminated any result. The 122 orphaned filings are recoverable
-in principle through a ticker-rename map but require label recomputation, and remain excluded.
+original offset was conservative rather than leaky: the mispaired text was older than its label,
+not newer, so no future information contaminated any original result. The 122 orphaned filings
+are recoverable in principle through a ticker-rename map but require label recomputation, and
+remain excluded.
 
-**What the fix revealed.** Re-running the headline comparison on the corrected panel barely moved
+**What the revision revealed.** Re-running the headline comparison on the revised panel barely moved
 it (structured plus TF-IDF went from 0.611 to 0.610 on the validation year). Correcting 74 percent
 of the pairs and changing the answer by one thousandth is itself informative: it means year-stale
 risk text predicts volatility almost exactly as well as current risk text, which is direct
@@ -198,16 +220,21 @@ finding is consistent with both: the text carries real signal (Part III shows it
 control), and that signal sits in the persistent level of the language rather than in its
 year-over-year freshness.
 
-### I.2 The truncation defect
+### I.2 Input parity: from truncated to full-text encoding
 
-**The defect.** The encoders processed each paragraph truncated to 256 tokens, following the
-convention of the parent paper (Chiu et al. 2025). In this corpus, 36.6 percent of paragraphs are
-longer than 256 tokens, and in total about 65 percent of the corpus words never reached any
-encoder. The TF-IDF representation, by contrast, ingests the full text. Every encoder-versus-
-TF-IDF conclusion in the original pipeline therefore compared a full-text count model against
-encoders that saw roughly one third of the words.
+**The inherited convention.** The encoders processed each paragraph truncated to 256 tokens, the
+convention of the parent paper (Chiu et al. 2025), whose contrastive framework Phase 3 extends and
+whose paragraph unit the pipeline adopted wholesale. The validation asked whether the
+count-versus-encoder comparison gave both sides the same input, and on this corpus the answer was
+no: 36.6 percent of paragraphs are longer than 256 tokens, and in total about 65 percent of the
+corpus words never reached any encoder, while the TF-IDF representation ingests the full text.
+A convention that is harmless in the parent paper's setting, where every compared model reads the
+same truncated paragraphs, becomes an unequal-input comparison the moment a full-text
+representation joins the field. Every encoder-versus-TF-IDF conclusion in the original pipeline
+therefore compared a full-text count model against encoders that saw roughly one third of the
+words.
 
-**The fix.** A windowed encoding scheme (`topics/encode_paragraphs.py`) splits each long paragraph
+**The revision.** A windowed encoding scheme (`topics/encode_paragraphs.py`) splits each long paragraph
 into overlapping 256-token windows with a stride of 192 tokens, encodes every window, and
 mean-pools the window vectors back to a paragraph vector before the usual paragraph-to-filing
 pooling. This is the standard approach for documents that exceed a transformer's context window:
@@ -220,28 +247,30 @@ representations at document level; flat windowing with mean-pooling is the simpl
 the same principle, and the 256-token paragraph unit follows Chiu et al. (2025). All five encoder
 caches were rebuilt this way: 462,590 windows over 176,616 paragraphs.
 
-**What the fix revealed.** Full-text encoding did not rescue the encoders (the full grid is in
-Part III). The value of the fix is that the comparison is now fair, so the conclusion "the count
-model wins" is defended rather than an artifact of unequal inputs.
+**What the revision revealed.** Full-text encoding did not rescue the encoders (the full grid is
+in Part III). The value of the revision is that the comparison is now fair, so the conclusion "the
+count model wins" is defended rather than an artifact of unequal inputs.
 
-### I.3 The head-standardisation defect
+### I.3 Comparison design: standardising the prediction head
 
-**The defect.** The redesign's ablation ladder (Part II) compared a structured-only baseline
-scored with a gradient-boosted-tree head (HGB) against a structured-plus-TF-IDF model scored with
-a sparse ridge head. Two model classes differ in capacity and regularisation, so the measured
-increment of "adding text" was confounded with the effect of switching model class. This is
-exactly the comparison hygiene problem described by Lipton and Steinhardt (2019): when two things
-change at once, the credit assignment is arbitrary.
+**The inherited practice.** The first pass of the ablation ladder (Part II) followed the common
+practice of scoring each feature set under the head conventional for it: a gradient-boosted-tree
+head (HGB) for the dense structured block, and a sparse ridge head for the high-dimensional
+TF-IDF block. The validation applied the ablation principle articulated by Lipton and Steinhardt
+(2019) to this design: when two things change at once, the credit assignment is arbitrary. Here
+the model class and the feature set changed together, so the measured increment of "adding text"
+was confounded with the effect of switching from trees to ridge, two model classes that differ in
+capacity and regularisation.
 
-**The fix and what it revealed.** Scoring every rung of the ladder under the same head shows the
+**The revision and what it revealed.** Scoring every rung of the ladder under the same head shows the
 confound was large. Structured features under ridge reach IC 0.591 on the validation year and
 0.603 on the twelve-year backtest, against 0.558 and 0.584 under HGB. The apparent text increment
-of about +0.05 IC in the pre-audit redesign shrinks to +0.011 IC (paired p = 0.057 over twelve
+of about +0.05 IC under mixed heads shrinks to +0.011 IC (paired p = 0.057 over twelve
 years) once both arms share the ridge head. The text increment is therefore real, consistent in
 sign across years, but roughly five times smaller than first reported. On the level-accuracy
 metric the text gain remains substantial (R²_log 0.175 to 0.226 on the validation year, and the
 difference in squared error is significant under a Diebold-Mariano test at p < 0.001). A related
-audit finding is that tuning the ridge penalty on the last training year hurt the following year,
+validation finding is that tuning the ridge penalty on the last training year hurt the following year,
 which confirms that model-selection variance swamps deltas of this size and that only paired
 multi-year tests should be trusted for them. All headline comparisons from here on hold the head
 fixed.
@@ -291,7 +320,7 @@ per-firm squared errors are compared by Diebold-Mariano tests.
 
 These are the primary results of the study. The protocol is the original single-split design
 (train before 2025, evaluate on 2025), which is the design most comparable to the literature, run
-on the corrected panel (Part I.1), with full-text encoder inputs (Part I.2) and a fixed head per
+on the revised panel (Part I.1), with full-text encoder inputs (Part I.2) and a fixed head per
 comparison (Part I.3).
 
 ### III.1 How to read the tables
@@ -332,7 +361,7 @@ anything about it.
 
 ### III.3 The encoder grid
 
-The full grid scores every encoder under both heads on the corrected panel with full-text windowed
+The full grid scores every encoder under both heads on the revised panel with full-text windowed
 inputs. The encoders are: `dual` and `sbert` (the original similarity-trained contrastive encoder
 and the off-the-shelf sentence transformer), `bge` (BAAI bge-base-en-v1.5, a modern strong
 general-purpose embedder, included to address the objection that the original encoders were
@@ -442,7 +471,7 @@ clean protocol.
 
 The decisive experiment retrains the supervised encoder with a strict temporal cutoff: training
 only on filings from years before 2017, epoch selection on 2017 (the last pre-cutoff year), the
-checkpoint then frozen, all on the corrected corpus. Years 2018 to 2024 are never touched by the
+checkpoint then frozen, all on the revised corpus. Years 2018 to 2024 are never touched by the
 encoder in any way, which makes the 2018 to 2024 expanding-window backtest admissible by
 construction. The retrained encoder (ftvol2018) is strong in-period: filing-level IC of 0.635 on
 its 2017 selection year, from text alone, confirming that the supervised objective learns a real
@@ -545,16 +574,16 @@ conditions extending to the training provenance of the encoders themselves.
 
 ### VII.2 What the study contributes
 
-1. **A defended benchmark rather than an asserted one.** The original "TF-IDF wins" was one
-   comparison on a flawed panel; the same conclusion now stands on a corrected panel against an
-   exhaustive and fair grid.
+1. **A defended benchmark rather than an asserted one.** The original "TF-IDF wins" was a single
+   comparison under the original protocol; after the validation of Part I, the same conclusion
+   stands on an aligned panel against an exhaustive and fair grid.
 2. **A characterisation of why the count model wins.** The volatility signal in 10-K risk text is
    lexical-level, persistent and count-representable. Task-aligned encoders can learn it in-period
    but the learned mapping is era-specific and does not transfer forward, while annually refit
    lexical features stay current by construction. To our knowledge this includes the first honest
    out-of-period evaluation of a volatility-supervised text encoder on this task.
-3. **Three methods findings from the audit,** each of independent use to practitioners:
-   correcting a 74-percent mispairing of text and labels moved the headline by one thousandth
+3. **Three methods findings from the validation,** each of independent use to practitioners:
+   re-aligning 74 percent of the text-to-label pairs moved the headline by one thousandth
    (boilerplate persistence, corroborating the premise of Lazy Prices from a new direction);
    equalising the text budget between representations did not rescue the encoders (a fair-input
    protocol for count-versus-embedding comparisons); and holding the prediction head fixed
@@ -583,18 +612,18 @@ remain excluded pending label recomputation.
 
 ---
 
-## Appendix — Correction ledger (old numbers → corrected numbers)
+## Appendix — Revision ledger (IPP-era values → current values)
 
 Every number below changed between the IPP-era write-ups and this document, for the reasons given
-in Part I. The old values combine the broken panel with head-confounded comparisons and should no
-longer be cited.
+in Part I. The old values were produced under the pre-revision protocol (the original label join
+and mixed-head comparisons) and should no longer be cited.
 
 | quantity | old value | corrected value | driver |
 |---|---|---|---|
-| structured baseline, val-2025 IC | 0.570 | 0.591 (ridge) / 0.558 (hgb) | panel fix + head reported explicitly |
-| struct+tfidf, val-2025 IC | 0.611 | 0.603–0.610 | panel fix |
-| struct+tfidf, val-2025 R²_log | 0.276 | 0.220–0.226 | panel fix |
-| struct+encoder(dual), val-2025 IC | 0.602 | 0.582 | panel fix + full-text encoding |
+| structured baseline, val-2025 IC | 0.570 | 0.591 (ridge) / 0.558 (hgb) | label re-alignment + head reported explicitly |
+| struct+tfidf, val-2025 IC | 0.611 | 0.603–0.610 | label re-alignment |
+| struct+tfidf, val-2025 R²_log | 0.276 | 0.220–0.226 | label re-alignment |
+| struct+encoder(dual), val-2025 IC | 0.602 | 0.582 | label re-alignment + full-text encoding |
 | text increment, val-2025 | +0.041 | +0.012 | same-head comparison |
 | text increment, 7-yr backtest | +0.050 (p = 0.090) | +0.016 (p = 0.098) | same-head comparison |
 | text increment, 12-yr backtest | — | +0.011 (p = 0.057) | new primary estimate |
