@@ -14,8 +14,8 @@ rest of the study. Part I describes the reframing of the research question aroun
 financial baseline, together with the evaluation protocol of the extended study. Part II presents
 the primary results under that protocol. Part III describes the robustness extension, which is a
 deliberate methodological adaptation beyond the original design, and the final verdict it
-produced. Part IV and Part V cover the disclosure-change branch and the ongoing earnings-call
-work. Part VI states the conclusions and contributions.
+produced. Part IV and Part V cover the disclosure-change branch and the earnings-call analysis.
+Part VI states the conclusions and contributions.
 
 ---
 
@@ -462,19 +462,40 @@ risk language, not its year-over-year shift.
 
 ---
 
-## Part V — Earnings-call tone (ongoing)
+## Part V — Earnings-call tone: a horizon-contrast finding
 
-Stage C asks whether a second text modality, the earnings call, adds signal. The 2025 call
-collection turned out to postdate the 10-K filings, so a filing-level test was not possible.
-The question was instead tested call-anchored: does call tone predict the 30-day volatility
-following the call? A first, crude test (tone against persistence, linearly) found nothing.
-Re-tested inside the full model (structured block plus tone under an HGB head, leave-one-quarter-
-out), tone adds +0.039 IC over structured alone (0.594 against 0.555), roughly the same increment
-that 10-K text adds. The methodological lesson is worth keeping in the report: a feature can add
-nothing on its own and still add real value in combination, so incremental tests must be run
-inside the full model. The status is suggestive and unconfirmed (n = 152 calls, a single 2024 to
-2025 regime). A small confirmation collection (the 406 pre-filing 2025 calls) is specified in
-`dataset_collection_discussion/calls_collection_spec_2025.md` and remains pending.
+Stage C asks whether a second text modality, the earnings call, adds signal. The question was
+answered in two steps at two different anchors, and the contrast between them is the finding.
+
+The first step was call-anchored. The initially available calls postdated the 10-K filings, so
+the pilot asked whether a call's tone predicts the 30-day volatility following the call itself.
+A crude test (tone against persistence, linearly) found nothing; re-tested inside the full model
+(structured block plus tone under an HGB head, leave-one-quarter-out), tone adds +0.039 IC over
+structured alone (0.594 against 0.555), roughly the same increment that 10-K text adds. The
+methodological lesson stands: a feature can add nothing on its own and still add real value in
+combination, so incremental tests must be run inside the full model.
+
+The second step became possible when the full transcript history was obtained (39,501 unique
+transcripts from a single corpus, covering 2006 to early 2025), allowing the pre-registered
+filing-level test at full scale. Tone features were attached to each filing from the most recent
+call strictly preceding the filing date (a leakage-free construction; 88.3 percent of the panel
+matched, at least 95 percent in every backtest year). Two independent evaluations were run. Within the 2025 validation
+cross-section, a five-fold cross-validated comparison with identical folds and identical heads
+per pair found every tone increment flat or negative (for example, minus 0.017 IC under the HGB
+head on the full panel; every confidence interval straddles zero, and the one significant
+accuracy test favours the model without tone). Across the 2018 to 2024 expanding-window backtest,
+where the historical coverage makes calls a fully backtestable family, structured plus tone
+matches structured alone (0.515 against 0.518, paired p = 0.395) and the full model with tone
+matches it without (0.561 against 0.561, p = 0.436).
+
+Both results are correct; they measure different horizons. A plausible reading, offered as an
+interpretation rather than an established mechanism, is that management tone carries genuine
+volatility information at the call date, but that by the filing date, one to three months later,
+the structured block has already absorbed it: the realised-volatility windows measured at filing
+span exactly the post-call period the tone predicted. Stated as a finding, Stage C identifies the
+condition under which a second text modality stops adding value: an anchor placed after the
+market has had time to impound the signal into the structured features. At the call horizon tone
+is informative; at the filing horizon the 10-K task already possesses fresher information.
 
 ---
 
@@ -506,6 +527,12 @@ conditions extending to the training provenance of the encoders themselves.
    volatility side.
 4. **A null result with a mechanism.** Disclosure-change features do not help volatility
    prediction, and the returns-versus-volatility contrast with Lazy Prices explains why not.
+5. **A horizon-contrast finding for a second text modality.** Earnings-call tone predicts
+   volatility at the call anchor (+0.039 IC over structured in combination) yet adds nothing at
+   the filing anchor, in 2025 and across seven backtest years. The plausible reading is that the
+   signal is absorbed into the structured features during the call-to-filing gap, which
+   identifies when an additional text source is worth attaching: only while its information has
+   not yet been impounded into cheaper, fresher predictors.
 
 ### VI.3 Honest caveats
 
@@ -513,14 +540,17 @@ The text increment on ranking is statistically suggestive, not conclusive (p = 0
 years); each additional evaluation year tightens it. The frozen-encoder staleness handicap in the
 clean-protocol test is real and only bounded, not removed, by the original-ftvol data point.
 Cross-sectional level R² in individual backtest years is noisy and sometimes negative; the ranking
-metric is the reliable lens. The Stage C call-tone result is a pilot.
+metric is the reliable lens. The Stage C horizon-contrast interpretation (tone absorbed between
+call and filing) is a plausible reading supported by the results, not a demonstrated mechanism.
 
 ### VI.4 Open questions
 
 1. Does per-window encoder retraining (twelve GPU fine-tunes) close any of the out-of-period gap,
    or is the era-specificity fundamental? Out of scope for the current timeline; the design is
    specified.
-2. Does call tone survive a filing-level test on the pre-filing 2025 collection?
+2. Answered (Part V): call tone does not survive the filing-level test, in 2025 or across the
+   2018–2024 backtest, while remaining informative at the call anchor. The open follow-on is
+   whether a shorter call-to-anchor gap (for example a mid-quarter anchor) recovers the signal.
 3. Does the struct+tfidf increment cross p = 0.05 as evaluation years accumulate?
 4. How does the dual-contrastive replication compare quantitatively with Chiu et al. (2025) on
    their own task, as opposed to on ours?

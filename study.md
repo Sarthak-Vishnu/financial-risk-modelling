@@ -291,8 +291,12 @@ exactly as the brief requires; the outcome is an informative negative on a sharp
 
 ## Still to come
 
-- **Stage C confirmation**: collect the 406 pre-filing 2025 calls, re-run the ladder; backfill 2006–2024
-  only if they add at the filing level.
+- ~~**Stage C confirmation**~~ **DONE 2026-07-18** — full 2006–2025 call history landed (Finstream
+  corpus via Sarthak's HF repo) and the filing-level test ran on both val-2025 and the 2018–2024
+  backtest. **Result: tone adds nothing at the filing anchor** (val-2025 gate: all paired dIC ≤ 0;
+  backtest: −0.004 p=0.395 vs structured, −0.001 p=0.436 vs struct+tfidf) while the call-anchored
+  +0.039 stands. Stage C closes as a horizon-contrast finding — see PART 4 below and
+  `phase5/STRESS_TEST_RESULTS.md` (Stage C section) for full tables. **No experiments remain.**
 
 ---
 
@@ -328,6 +332,40 @@ overturns it. Every prior choice was questioned first. Outcome, in five results:
    leakage audit including encoder-training provenance). The thesis contribution is a *defended
    benchmark plus the characterization of why*: the volatility signal in 10-K risk text is
    lexical-level, persistent, and count-representable.
+
+---
+
+# PART 4 — Stage C closed: the filing-level call-tone result (2026-07-18)
+
+The full transcript history arrived (Finstream corpus, 39,501 unique transcripts 2005-10→2025-03,
+re-hosted at HF `SarthakVishnu/dissertation-dataset` → `calls/SP500_calls_2006to2025.parquet`),
+so the confirmation ran at full scale instead of the planned 406-call pilot: `build_call_features.py`
+(CIK-primary join, most recent call strictly before each filing, ≤200d lookback) matches
+**7,159/8,105 filings (88.3%; ≥95% every backtest year 2013–2024; 390/406 in val-2025)**.
+The build is deliberately single-source (parquet only; the 299 API Ninjas JSONs stay as the
+call-anchored pilot's data — a diff confirmed excluding them changes zero evaluated-year values,
+only 14 unused 2026 matches).
+
+Two independent filing-level tests, both null:
+
+1. **val-2025 gate** (`call_filing_gate.py`, 5-fold CV within the 2025 cross-section, same folds
+   and same head per pair): every ± tone pair is flat or negative — full panel dIC −0.017 (hgb) /
+   +0.000 (ridge) / −0.000 (tfidf lane); matched subset −0.007/−0.013/−0.012, all CIs straddling
+   zero; the one significant DM test (p=0.022) favours **no tone**.
+2. **2018–2024 backtest** (`run_fusion.py`, calls now a leakage-free family): struct+calls 0.515
+   vs structured 0.518 (dIC −0.004, p=0.395); struct+tfidf+calls 0.561 vs struct+tfidf 0.561
+   (dIC −0.001, p=0.436). val-2025 rows agree (+0.003/+0.001, noise).
+
+**The call-anchored pilot (+0.039 over structured, n=152) and this filing-level null are both
+correct — they measure different horizons.** Plausible reading (an interpretation, not an
+established mechanism): tone carries real volatility information at the call date, but by the
+filing date — one to three months later — the structured block, whose realised-vol windows span
+the post-call period, already contains it. Stage C closes as a **horizon-contrast finding**:
+management tone predicts volatility at the call horizon, and the condition under which it stops
+adding value is exactly the one the 10-K task imposes (a later anchor with fresher structured
+information). Full tables: `phase5/STRESS_TEST_RESULTS.md` (Stage C section).
+
+**With this, every experimental result of the study is final.** Remaining work is write-up only.
 
 ---
 

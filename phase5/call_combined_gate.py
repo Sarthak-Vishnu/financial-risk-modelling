@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "dataset_config"))
 from build_market_features import load_prices, market_index, features_for
-from build_call_features import call_records, _extract, _date_of, _ticker_of
+from build_call_features import json_records, _extract, _date_of, _ticker_of
 
 ANNUALIZE = math.sqrt(252)
 WINDOW = 30
@@ -38,7 +38,7 @@ def fwd_vol(series, d):
 
 
 def main():
-    calls = call_records().dropna(subset=["ticker", "call_date"])
+    calls = json_records().dropna(subset=["ticker", "call_date"])   # the 2025-26 API Ninjas set (the pilot's data)
     calls["ticker"] = calls["ticker"].str.upper().str.strip()
     # transcript text per (ticker, date)
     texts = {}

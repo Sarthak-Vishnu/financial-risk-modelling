@@ -168,8 +168,63 @@ protocol.** Decision-tree branch: the "all null" row — with two characterizati
 | Semantic change adds where lexical change doesn't | Novel disclosure-change signal for vol forecasting (Lazy-Prices extension). |
 | All null | A strong structured-ridge baseline (IC 0.603, 12-yr) + a small but consistent lexical text increment (+0.011, p=0.057) + full head/representation/pooling grid *characterizing* the text signal as lexical-level — a sharp, honest contribution. |
 
+## Stage C — earnings-call tone: filing-level result (2026-07-18, complete)
+
+**Data (single source).** Full transcript history landed: the Finstream corpus (39,766 rows →
+39,501 unique calls, 637 firms, 2005-10→2025-03; re-hosted at HF
+`SarthakVishnu/dissertation-dataset`, `calls/SP500_calls_2006to2025.parquet`).
+`build_call_features.py` (CIK-primary join, ticker fallback, most recent call strictly before the
+filing, ≤200d): **7,159/8,105 filings matched (88.3%)**, ≥95% in every backtest year 2013–2024,
+390/406 in val-2025. The 299 API Ninjas JSONs are deliberately excluded from the feature build
+(they remain the call-anchored pilot's data): a two-source-vs-parquet-only diff confirmed their
+only unique matches are 14 filings dated 2026 — untouched by any evaluation — with **zero**
+feature values changed on 2006–2025 rows, so every number below is single-source.
+
+**1) Filing-level gate, val-2025 (`call_filing_gate.py`; 5-fold CV within the 2025 cross-section,
+identical folds per comparison, same head per pair):**
+
+| pair (same head) | full panel (n=393) dIC [95% CI] | matched only (n=379) dIC | DM p |
+|---|---|---|---|
+| structured ± tone [hgb] | −0.017 [−0.034, +0.001] | −0.007 | 0.022 / 0.066 |
+| structured ± tone [ridge] | +0.000 [−0.011, +0.012] | −0.013 | 0.677 / 0.062 |
+| struct+tfidf ± tone [ridge] | −0.000 [−0.012, +0.011] | −0.012 | 0.539 / 0.061 |
+
+Every CI straddles or sits below zero; the only significant DM test favours the **no-tone** model.
+
+**2) Backtest 2018–2024 (`run_fusion.py`, calls now a leakage-free family — 6,845/7,367 panel
+filings covered on the single-source build (the run printed 6,859 pre-cleanup; the 14 extra were
+2026 filings, which never enter training or evaluation, so all metrics are unaffected); paired
+across-year test vs the same-head counterpart):**
+
+| lane | mean IC | paired dIC | p |
+|---|---|---|---|
+| struct+calls [hgb] vs structured [hgb] | 0.515 vs 0.518 | −0.004 | 0.395 |
+| struct+tfidf+calls [ridge] vs struct+tfidf [ridge] | 0.561 vs 0.561 | −0.001 | 0.436 |
+
+val-2025 rows agree: struct+calls 0.559 (vs 0.556), struct+tfidf+calls 0.611 (vs 0.610) — noise.
+
+**Verdict.** Call tone adds nothing at the filing anchor, in 2025 and across all seven backtest
+years — while the call-anchored pilot (+0.039 IC over structured predicting post-*call* 30d vol,
+n=152, `call_combined_gate.py`) stands. The two results are not in tension: they measure different
+horizons. A plausible reading (interpretation, not established mechanism): the tone signal is real
+at the call date but is absorbed by filing time — the structured block at the filing date includes
+realised-vol windows spanning the post-call period, so whatever tone predicted has already been
+realised into prices. Stage C therefore closes as a **horizon-contrast finding**: management tone
+carries volatility information at the call horizon, and the conditions under which it stops adding
+value are precisely the ones the 10-K prediction task imposes (a later anchor with fresher
+structured information). 12-yr window run skipped — the 7-yr null is flat (p≈0.4) and a wider
+window can only re-confirm it.
+
 ## Run log
 
+- 2026-07-18 — job 3557338 (Teaching, 2 CPU): full fusion ladder with calls rows. Backtest
+  struct+calls −0.004 (p=0.395) vs structured; struct+tfidf+calls −0.001 (p=0.436) vs
+  struct+tfidf. Same day: `call_filing_gate.py` (login, ~2 min) — filing-level 2025 gate NULL on
+  both populations. Earlier: full Finstream corpus (1.07GB parquet, HF) downloaded;
+  `build_call_features.py` rebuilt (CIK join). Final pass: features rebuilt parquet-only for a
+  single-source data story — diff vs the two-source build showed 0 changed values on evaluated
+  years (only 14 unused 2026 matches dropped; 7,159 matched). STAGE C COMPLETE — all
+  experimental results of the study are now final.
 - 2026-07-04 (evening) — job 3527629 (h200_3g.71gb, 20 epochs batch 128): ftvol2018 trained
   (best 2017 filing IC 0.635 @ epoch 19), windowed encode, admissible 2018–2024 backtest.
   RESULT: 0.497–0.504 IC, ≈0 over structured, −0.06 vs struct+tfidf → FINAL VERDICT above.

@@ -123,9 +123,36 @@ def main():
             tdf2[c] = Xstr[:, i]
         tfidf_str = lambda: E.TextNumericRidge(numeric_cols=["log_lag"] + scols)
         _, py, agg = cs_backtest(panel, tdf2, y, years, lag, tfidf_str)
+        bt["struct_tfidf"] = py
         dimp = E.paired_year_test(py, base, key="spear")
         print(f"{'struct + tfidf':22s} {agg['mean_ic']:8.3f} {agg['ic_t']:6.2f} {agg['cs_r2']:7.3f} "
               f"{dimp[0]:13.3f} {dimp[1]:7.3f}")
+
+    # Stage C: earnings-call tone. Features come from the most recent call STRICTLY BEFORE each
+    # filing (build_call_features.py) -> leakage-free, so calls are a backtestable family once the
+    # historical collection covers the training years. Tone columns only (call_days_before_filing
+    # is matching metadata, not a predictor).
+    Xcall, ccols_all = E.call_matrix(panel)
+    tone_cols = [c for c in (ccols_all or []) if c != "call_days_before_filing"]
+    has_calls = (Xcall is not None
+                 and np.isfinite(Xcall[:, [ccols_all.index(c) for c in tone_cols]]).any())
+    if has_struct and has_calls:
+        Xtone = Xcall[:, [ccols_all.index(c) for c in tone_cols]]
+        cover = np.isfinite(Xtone).any(axis=1)
+        print(f"calls: {int(cover.sum()):,}/{len(panel):,} filings have a pre-filing call")
+        sc_block = np.hstack([blocks["structured"], Xtone])
+        _, py_sc, agg = cs_backtest(panel, sc_block, y, years, lag, E.make_hgb)
+        dimp = E.paired_year_test(py_sc, base, key="spear")
+        print(f"{'struct + calls':22s} {agg['mean_ic']:8.3f} {agg['ic_t']:6.2f} {agg['cs_r2']:7.3f} "
+              f"{dimp[0]:13.3f} {dimp[1]:7.3f}")
+        tdf3 = tdf2.copy()
+        for i, c in enumerate(tone_cols):
+            tdf3[c] = Xtone[:, i]
+        tfidf_str_calls = lambda: E.TextNumericRidge(numeric_cols=["log_lag"] + scols + tone_cols)
+        _, py_stc, agg = cs_backtest(panel, tdf3, y, years, lag, tfidf_str_calls)
+        dimp = E.paired_year_test(py_stc, bt["struct_tfidf"], key="spear")   # vs struct+tfidf, same head
+        print(f"{'struct + tfidf + calls':22s} {agg['mean_ic']:8.3f} {agg['ic_t']:6.2f} {agg['cs_r2']:7.3f} "
+              f"{dimp[0]:13.3f} {dimp[1]:7.3f}  (dIC vs struct+tfidf)")
 
     # ---------- (2) clean val-2025: all conditions incl. encoder/topics ----------
     print("\n=== (2) CLEAN val-2025 — IC / R2 (encoder & topic conditions are valid here) ===")
@@ -141,6 +168,9 @@ def main():
     if has_struct:
         show("structured", blocks["structured"], E.make_hgb)
         show("struct + tfidf", tdf2, tfidf_str)
+        if has_calls:
+            show("struct + calls", sc_block, E.make_hgb)
+            show("struct + tfidf + calls", tdf3, tfidf_str_calls)
         for enc, (Eenc, Tt) in encs.items():
             se = np.hstack([blocks["structured"], Eenc])
             show(f"struct + enc[{enc}]", se, E.make_hgb)
