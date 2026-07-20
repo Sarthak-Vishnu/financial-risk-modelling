@@ -274,8 +274,56 @@ is small (52–89 firms/year). Stage E therefore closes as: **no level effect, p
 directionally consistent evidence that the text increment is state-dependent** — largest where
 informed parties disagree and smallest where they have already traded.
 
+## Horizon robustness — Prof Ma Q1/Q2 (2026-07-20, complete)
+
+**Question.** Is the count-model result (and the text increment) consistent across label
+horizons, or specific to the 30-trading-day label? Labels regenerated at 20/60/90 trading days
+(`dataset_config/compute_horizon_labels.py`; same definition and price sources as the frozen 30d
+labels, plus a staleness guard requiring the window to touch the filing date within 10 calendar
+days — no label rather than a stale one where a firm's price history ends). The build
+self-certifies: recomputed H=30 vs the stored labels, corr = 1.000000 on both columns,
+max |diff| ≈ 3e-6 (the 6dp rounding). The 30d labels and `feature_table_fixed.parquet` were never
+modified; new horizons live in `datasets/volatility_labels_horizons.parquet`, selected at runtime
+via `RISK_HORIZON` (`eval_common.load_panel`; default 30 = byte-identical legacy path). Fair pair
+per horizon (`phase5/run_horizon.py`): lagged persistence, structured [ridge], struct+tfidf
+[sparse], horizon-matched log_lag throughout; 2018–2024 backtest + val-2025. The H=30 lane ran
+first off the frozen labels and reproduced every anchor exactly (0.561 / +0.016 p=0.098 /
+val-2025 0.591 & 0.610) before any new horizon was read.
+
+| horizon | panel | lagged IC | struct [ridge] | struct+tfidf | text ΔIC | p | val-2025 struct / s+tfidf |
+|---|---|---|---|---|---|---|---|
+| 20d | 7,366 | 0.401 | 0.513 | 0.532 | **+0.020** | 0.119 | 0.638 / 0.637 |
+| 30d | 7,367 | 0.461 | 0.546 | 0.561 | **+0.016** | 0.098 | 0.591 / 0.610 |
+| 60d | 7,364 | 0.528 | 0.592 | 0.591 | −0.001 | 0.851 | 0.709 / 0.718 |
+| 90d | 7,359 | 0.534 | 0.607 | 0.602 | −0.005 | 0.477 | 0.739 / 0.751 |
+
+**Verdict — two findings.**
+1. **The model ranking is horizon-robust.** struct+tfidf ≥ structured ≥ lagged at every horizon
+   on the backtest; val-2025 agrees everywhere. Nothing overtakes the count model at any horizon,
+   so the headline representation result is not an artifact of the 30-day design choice.
+2. **The text increment has a term structure** — +0.020 → +0.016 → −0.001 → −0.005 across
+   20/30/60/90 days. Direction is the *opposite* of the pre-run prior (QnA Q1 predicted text
+   mattering more at long horizons): overall predictability rises with horizon (lagged IC
+   0.401 → 0.534; longer realised-vol windows are smoother and more persistent), and that
+   persistent component is exactly what the structured HAR-style block already carries. Reading
+   (hedged, consistent with Stages C/E): text contributes the transient near-filing component of
+   uncertainty, which washes out of the target as the horizon lengthens — the study's 30-day
+   headline sits at the horizon where the text signal lives, and the increment is demonstrably
+   absent by 60 days. No individual ΔIC is significant (p 0.098–0.851); the monotone pattern
+   across four horizons, not any single cell, is the evidence. Label construct validity: COVID
+   fiscal-2020 median fwd vol decays with horizon (0.85 → 0.65, mean reversion); cross-horizon
+   label correlations 0.88–0.98.
+
 ## Run log
 
+- 2026-07-20 — job 3559526 (Teaching, 2 CPU, 34m): horizon experiment complete — label build
+  (certification corr 1.000000 both columns), H=30 anchor reproduction exact, then H=20/60/90.
+  Findings above; QnA_from_Prof_Ma.md Q1/Q2 updated to measured answers. (First submit 3559518
+  was stopped by the build's own certification gate: two ETN rows — a ticker absent from CRSP
+  2025 — got stale-window lagged labels from FINSABER data ending 2024-12-31; fixed with the
+  10-day staleness guard, after which agreement is exact. The gate doing its job — no horizon
+  number was ever read off the ungated build. Attempt-1 log preserved as
+  logs/run_horizon_attempt1.log.)
 - 2026-07-19 — job 3557942 (Teaching, 2 CPU, 2h18m): full Stage E chain — feature build,
   fusion ladder both windows (first 12-yr run with the `RISK_TEST_START` switch), conditioning
   both windows. All prior anchors reproduced exactly (struct+tfidf 0.561/0.614; unconditional

@@ -45,6 +45,10 @@ EPS = 1e-6
 ALPHAS = np.logspace(-2, 3, 20)
 TEST_YEARS = list(range(int(os.environ.get("RISK_TEST_START", "2018")), 2025))
 # expanding-window test years (default 2018..2024; RISK_TEST_START=2013 -> the 12-year window)
+HORIZON = int(os.environ.get("RISK_HORIZON", "30"))
+# label horizon in trading days (default 30 = the study's frozen labels; 20/60/90 swap in the
+# horizon labels from compute_horizon_labels.py — the 30d columns are never modified)
+HORIZON_LABELS = ROOT / "datasets" / "volatility_labels_horizons.parquet"
 MIN_TRAIN_YEAR = 2007                  # earliest labelled year with full coverage
 
 
@@ -67,6 +71,20 @@ def load_panel():
     df = df[df["fwd_vol_30d"].notna() & df["lagged_vol_30d"].notna()].copy()
     df["log_fwd"] = np.log(df["fwd_vol_30d"].clip(lower=EPS))
     df["log_lag"] = np.log(df["lagged_vol_30d"].clip(lower=EPS))
+    if HORIZON != 30:
+        # horizon panel = the 30d panel re-labelled at H (subset where the H-day windows exist),
+        # so cross-horizon comparisons run on near-identical universes
+        if not HORIZON_LABELS.exists():
+            raise SystemExit(f"{HORIZON_LABELS} not found — run compute_horizon_labels.py first.")
+        hl = pd.read_parquet(HORIZON_LABELS)
+        hl["filing_date"] = pd.to_datetime(hl["filing_date"])
+        fc, lc = f"fwd_vol_{HORIZON}d", f"lagged_vol_{HORIZON}d"
+        df = df.merge(hl[["ticker", "filing_date", fc, lc]], on=["ticker", "filing_date"],
+                      how="left")
+        df = df[df[fc].notna() & df[lc].notna()].copy()
+        df["log_fwd"] = np.log(df[fc].clip(lower=EPS))
+        df["log_lag"] = np.log(df[lc].clip(lower=EPS))
+        print(f"[horizon {HORIZON}d] panel: {len(df):,} filings")
     return df.reset_index(drop=True)
 
 
