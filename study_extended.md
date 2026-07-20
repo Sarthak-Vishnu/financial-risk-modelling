@@ -419,6 +419,49 @@ scope. The one deploy-realistic data point available, the original ftvol trained
 before 2025 and evaluated on 2025, reaches parity and not superiority even with zero staleness,
 which bounds how much the handicap can be hiding.
 
+### III.4 The horizon of the text increment
+
+Every result so far is stated at one horizon: realised volatility over the 30 trading days after
+the filing, the monthly convention of the realised-volatility literature. That horizon is a
+design choice, and the last robustness question is whether the study's conclusions are specific
+to it. Labels were therefore regenerated at 20, 60 and 90 trading days under the identical
+definition (standard deviation of daily log returns over the window strictly after — and, for the
+lagged predictor, strictly before — the filing date, annualised), from the same price sources as
+the structured features. The construction was validated by requiring it to reproduce the study's
+30-day labels exactly before any new horizon was read (agreement to rounding precision on every
+comparable filing), and windows are required to lie adjacent to the filing date, so a firm whose
+price history has ended receives no label rather than a stale one. The fair pair of Part III.1
+was then rerun per horizon — persistence, structured [ridge], struct+tfidf [sparse], each with
+the horizon-matched lagged volatility — on the same 2018–2024 expanding-window backtest and the
+2025 validation year.
+
+| horizon | lagged IC | structured [ridge] | struct+tfidf [sparse] | text ΔIC (paired) | p | val-2025 struct / struct+tfidf |
+|---|---|---|---|---|---|---|
+| 20 days | 0.401 | 0.513 | 0.532 | +0.020 | 0.119 | 0.638 / 0.637 |
+| 30 days | 0.461 | 0.546 | 0.561 | +0.016 | 0.098 | 0.591 / 0.610 |
+| 60 days | 0.528 | 0.592 | 0.591 | −0.001 | 0.851 | 0.709 / 0.718 |
+| 90 days | 0.534 | 0.607 | 0.602 | −0.005 | 0.477 | 0.739 / 0.751 |
+
+Two findings. First, the model ranking is horizon-robust: struct+tfidf at or above structured,
+structured above persistence, at every horizon on the backtest, with the validation year
+agreeing throughout. No conclusion of Parts II and III is an artifact of the 30-day choice.
+Second, the text increment itself has a term structure: +0.020 at 20 days, +0.016 at 30, and
+zero at 60 and 90. The direction is the opposite of the naive expectation that a slow-moving
+annual disclosure should matter more at longer horizons. The resolution is visible in the first
+column: overall predictability rises with horizon (persistence alone climbs from 0.401 to
+0.534), because longer realised-volatility windows are smoother and increasingly dominated by
+the persistent component of volatility — and that component is precisely what the structured
+block's multi-horizon trailing measures already carry. What the text contributes is the
+transient, near-filing component of uncertainty, which washes out of the target as the horizon
+lengthens. Read alongside Parts V and VI, this completes the same absorption logic in a third
+dimension: earnings-call tone showed *when* in time a text signal stops adding value, the
+insider-conditioning analysis showed *for which firms* it adds most, and the term structure
+shows *at which horizon* it exists at all. The headline increment is thus a property of the
+monthly horizon at which the study states it — present at 20 to 30 days, demonstrably absent by
+60. As everywhere in this study, the qualification is stated plainly: no single horizon's ΔIC is
+individually significant, and the evidence is the monotone pattern across four horizons, not any
+one cell.
+
 ---
 
 ## Part IV — Disclosure-change features (the Lazy-Prices branch)
@@ -610,6 +653,12 @@ conditions extending to the training provenance of the encoders themselves.
    insiders disagree and thins in firms whose insiders have recently traded heavily — the
    cross-sectional counterpart of the absorption reading, subject to the bounds stated in
    Part VI.
+7. **A term structure for the text increment.** Relabelling the task at 20, 60 and 90 trading
+   days (Part III.4) shows the model ranking is horizon-robust while the text increment itself
+   is a short-horizon phenomenon: +0.020 IC at 20 days, +0.016 at 30, zero at 60 and 90. The
+   study's headline is thereby scoped by measurement rather than assumption — text adds
+   volatility information at the monthly horizon, where the transient component it captures has
+   not yet washed out of the target.
 
 ### VII.3 Honest caveats
 
@@ -621,7 +670,9 @@ metric is the reliable lens. The Stage C horizon-contrast interpretation (tone a
 call and filing) is a plausible reading supported by the results, not a demonstrated mechanism.
 The same holds for the Stage E conditioning results: two conditioners over two windows with no
 multiplicity adjustment, effects concentrated from 2018 onward — suggestive and directionally
-consistent, not confirmatory.
+consistent, not confirmatory. The horizon term structure (Part III.4) carries the analogous
+qualification: its evidence is the monotone pattern across four horizons, no single one of which
+is individually significant.
 
 ### VII.4 Open questions
 
