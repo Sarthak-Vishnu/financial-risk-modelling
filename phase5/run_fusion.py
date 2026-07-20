@@ -154,6 +154,27 @@ def main():
         print(f"{'struct + tfidf + calls':22s} {agg['mean_ic']:8.3f} {agg['ic_t']:6.2f} {agg['cs_r2']:7.3f} "
               f"{dimp[0]:13.3f} {dimp[1]:7.3f}  (dIC vs struct+tfidf)")
 
+    # Stage E: Form 4 insider features. Trailing pre-filing windows (build_form4_features.py) ->
+    # leakage-free, and coverage is full 2006+ so the rows are valid in both backtest windows.
+    Xf4, f4_cols = E.form4_matrix(panel)
+    has_f4 = Xf4 is not None and np.isfinite(Xf4).any()
+    if has_struct and has_f4:
+        cover = np.isfinite(Xf4).any(axis=1)
+        print(f"form4: {int(cover.sum()):,}/{len(panel):,} filings in the Form 4 universe")
+        sf_block = np.hstack([blocks["structured"], Xf4])
+        _, py_sf, agg = cs_backtest(panel, sf_block, y, years, lag, E.make_hgb)
+        dimp = E.paired_year_test(py_sf, base, key="spear")
+        print(f"{'struct + form4':22s} {agg['mean_ic']:8.3f} {agg['ic_t']:6.2f} {agg['cs_r2']:7.3f} "
+              f"{dimp[0]:13.3f} {dimp[1]:7.3f}")
+        tdf4 = tdf2.copy()
+        for i, c in enumerate(f4_cols):
+            tdf4[c] = Xf4[:, i]
+        tfidf_str_f4 = lambda: E.TextNumericRidge(numeric_cols=["log_lag"] + scols + f4_cols)
+        _, py_stf, agg = cs_backtest(panel, tdf4, y, years, lag, tfidf_str_f4)
+        dimp = E.paired_year_test(py_stf, bt["struct_tfidf"], key="spear")  # vs struct+tfidf, same head
+        print(f"{'struct + tfidf + form4':22s} {agg['mean_ic']:8.3f} {agg['ic_t']:6.2f} {agg['cs_r2']:7.3f} "
+              f"{dimp[0]:13.3f} {dimp[1]:7.3f}  (dIC vs struct+tfidf)")
+
     # ---------- (2) clean val-2025: all conditions incl. encoder/topics ----------
     print("\n=== (2) CLEAN val-2025 — IC / R2 (encoder & topic conditions are valid here) ===")
     print(f"{'condition':26s} {'IC':>7s} {'R2_log':>7s}  n")
@@ -171,6 +192,9 @@ def main():
         if has_calls:
             show("struct + calls", sc_block, E.make_hgb)
             show("struct + tfidf + calls", tdf3, tfidf_str_calls)
+        if has_f4:
+            show("struct + form4", sf_block, E.make_hgb)
+            show("struct + tfidf + form4", tdf4, tfidf_str_f4)
         for enc, (Eenc, Tt) in encs.items():
             se = np.hstack([blocks["structured"], Eenc])
             show(f"struct + enc[{enc}]", se, E.make_hgb)

@@ -369,6 +369,48 @@ information). Full tables: `phase5/STRESS_TEST_RESULTS.md` (Stage C section).
 
 ---
 
+# PART 5 — Stage E: Form 4 insider features × risk text (2026-07-19)
+
+The core narrative above stays frozen; Stage E is a deliberate *extension study* (supervisor
+interest: insider data + risk text). Data: `form4_transactions.csv` (SEC structured flat files,
+1.67M non-derivative rows, 645 firms 2006–2025, HF `SarthakVishnu/dissertation-dataset` →
+`form4/`). Eight `f4_*` intensity/dispersion features per filing (information-asymmetry framing,
+not alpha direction) over a trailing (filing−180d, filing−3d] window — the 3-day margin covers
+Form 4's 2-business-day disclosure deadline, so everything is public at prediction time. Coverage
+is total (7,367/7,367 panel filings, every year 2006+), so unlike calls the lanes are valid on
+**both** backtest windows. All prior anchors reproduced exactly in the run (job 3557942).
+
+Two results:
+
+1. **Level effect: null everywhere.** struct+form4 vs structured: +0.000 p=0.897 (7-yr) / +0.001
+   p=0.768 (12-yr); struct+tfidf+form4 vs struct+tfidf: +0.000 p=0.886 / −0.001 p=0.585; val-2025
+   agrees. The structured block (realised vol, drawdown, liquidity) already spans what insider
+   activity levels carry.
+2. **Text-increment conditioning (the pre-registered question): signed, and interpretable.**
+   Splitting each test year at the (strictly pre-filing) median of the conditioner and testing
+   high-minus-low ΔIC across years:
+   - `f4_abn_intensity`: **reversed** — text increment larger in the *low*-intensity half
+     (−0.012, t=−2.67, p=0.037, 7-yr, negative 6/7 years; attenuates to −0.006 p=0.227 at 12-yr).
+   - `f4_disagreement`: **as hypothesized** — larger where trading insiders are split (+0.029,
+     t=2.04, p=0.088, 7-yr, positive 6/7; +0.016 p=0.158 at 12-yr; within the disagreement half
+     the increment hits +0.083 in 2021 and +0.132 in 2023 — 3–4× the unconditional +0.016).
+
+Plausible reading (interpretation, not mechanism): the two conditioners proxy different stages of
+the information process. Heavy insider trading *is* a transmission channel (Form 4s are public in
+2 business days) — where insiders have traded, their information is already flowing into prices
+and text has less left to add. Disagreement marks *unresolved* dispersion among the best-informed
+— exactly where narrative disclosure should still matter. This extends the Stage C absorption
+story from time (call vs filing anchor) to the cross-section (which firms text helps on): the
+text increment is earned where the market hasn't impounded the information, spent where insiders
+already revealed it by trading.
+
+Bounds, stated plainly: 2 conditioners × 2 windows, no multiplicity adjustment, p's 0.037–0.222+,
+effects concentrated 2018+, disagreement high-cell small (52–89 firms/yr). Suggestive and
+directionally consistent, not confirmatory. Full tables: `phase5/STRESS_TEST_RESULTS.md`
+(Stage E section); prose: `study_extended.md` Part VI.
+
+---
+
 ## My doubts / open questions
 
 - Dual contrastive is a replication of Chiu et al. — is our IC for it comparable to theirs?

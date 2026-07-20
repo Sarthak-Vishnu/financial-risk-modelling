@@ -15,7 +15,8 @@ financial baseline, together with the evaluation protocol of the extended study.
 the primary results under that protocol. Part III describes the robustness extension, which is a
 deliberate methodological adaptation beyond the original design, and the final verdict it
 produced. Part IV and Part V cover the disclosure-change branch and the earnings-call analysis.
-Part VI states the conclusions and contributions.
+Part VI reports the insider-trading extension, which asks when — for which firms — the text
+increment is earned. Part VII states the conclusions and contributions.
 
 ---
 
@@ -499,9 +500,80 @@ is informative; at the filing horizon the 10-K task already possesses fresher in
 
 ---
 
-## Part VI — Conclusions and contributions
+## Part VI — Insider trading and the risk text: when the text increment is earned
 
-### VI.1 The defended benchmark
+Stage E extends the study with a third information source, insider transactions reported on SEC
+Form 4, chosen not as another candidate feature family but because it speaks directly to the
+mechanism the study has converged on. Insider trading is the classic observable proxy for
+information asymmetry, and information asymmetry is a volatility construct: it measures how much
+material information is concentrated in few hands, not which direction that information points.
+Every feature is accordingly framed as intensity or dispersion rather than as a trading signal.
+Eight features are computed per filing: transaction and distinct-insider counts, net direction by
+count and by value, insider disagreement (the fraction of trading insiders on the minority
+buy-or-sell side of their firm's window), the officer sell fraction, abnormal trading intensity
+(the window trade rate against the firm's own trailing-365-day rate), and the opportunistic
+fraction under the Cohen, Malloy and Pomorski (2012) routine-trade classification, in which a
+trade is routine if the same insider traded in the same calendar month in at least three prior
+years.
+
+The construction inherits every discipline of the study. Features aggregate a trailing window
+from 180 to 3 days before each filing date; the three-day margin covers Form 4's two-business-day
+disclosure deadline, so every feature is public at prediction time. Matching is by CIK with a
+ticker fallback. Coverage is effectively complete — every panel filing falls inside the Form 4
+universe, in every year from 2006 — so, unlike the calls family, these lanes are valid over both
+backtest windows. One construct-validity observation from the build: median abnormal intensity is
+mildly negative in every year, which is the pre-filing blackout period made visible in the data —
+insiders trade less immediately before a 10-K than in their own trailing baseline.
+
+The first question is the level question, and its answer is null. Adding the insider block to the
+structured model changes nothing in either window (paired ΔIC +0.000 at p = 0.897 over the
+seven-year backtest, +0.001 at p = 0.768 over twelve years), and adding it to the full model
+likewise (+0.000 at p = 0.886 and −0.001 at p = 0.585); the 2025 validation rows agree. This is
+itself consistent with the study's architecture: the structured block already contains realised
+volatility, drawdown and liquidity measures, and whatever elevated insider activity accompanies,
+those features appear to reflect.
+
+The second question is the one Stage E was designed for, and it was pre-registered with a
+directional hypothesis before the run: does the text increment — struct+tfidf against structured
+under matched heads, the study's fair pair — concentrate in the high-insider-activity half of
+each year's cross-section? Because the conditioning variables are computed strictly pre-filing,
+splitting each test year at its median is knowable at prediction time, so the analysis is
+leakage-free by construction. Within each half the paired per-year ΔIC is computed on the same
+firms, and the high-minus-low difference is tested across years.
+
+The two conditioners answer in opposite directions, and the pattern is more informative than
+either alone. Conditioned on abnormal trading *intensity*, the hypothesis is reversed: the text
+increment is larger in the low-intensity half (high-minus-low ΔIC of −0.012, t = −2.67,
+p = 0.037 over the seven-year window, negative in six of seven years; −0.006 at p = 0.227 over
+twelve years). Conditioned on insider *disagreement*, the hypothesis holds: the increment is
+larger where trading insiders are split (+0.029, t = +2.04, p = 0.088 over seven years, positive
+in six of seven; +0.016 at p = 0.158 over twelve). In the disagreement half the per-year text
+increment reaches three to four times its unconditional size (+0.083 in 2021, +0.132 in 2023).
+
+A plausible reading, offered as an interpretation rather than an established mechanism, is that
+the two conditioners proxy different stages of the information process. Abnormal trading
+intensity is itself a transmission channel: Form 4s become public within two business days, so
+where insiders have traded heavily, their information is already flowing into prices and the
+disclosure text has less left to add. Disagreement, by contrast, marks unresolved dispersion
+among the best-informed parties — precisely the state in which narrative disclosure would still
+carry incremental information. Read this way, Stage E extends the Stage C absorption narrative
+from the time dimension (tone informative at the call anchor, absorbed by the filing anchor) to
+the cross-section: the text increment is earned on the firms whose information the market has not
+yet impounded, and spent on the firms whose insiders have already revealed theirs by trading.
+
+The bounds of the claim are stated plainly. Two conditioners were tested over two windows with no
+multiplicity adjustment, the p-values range from 0.037 to 0.227, both effects attenuate as the
+backtest extends to 2013 (the pattern is concentrated from 2018 onward), and the disagreement
+high-cell is small (52 to 89 firms per year). Stage E therefore closes as a null level effect
+together with suggestive, directionally consistent evidence that the text increment is
+state-dependent — largest where informed parties disagree, smallest where they have already
+traded.
+
+---
+
+## Part VII — Conclusions and contributions
+
+### VII.1 The defended benchmark
 
 The final model of the study is the structured feature block plus full-text TF-IDF under a sparse
 ridge head. Its credentials: mean IC 0.614 with t = 10.4 over the twelve-year expanding-window
@@ -512,7 +584,7 @@ pooling schemes, five encoders including a modern general-purpose embedder and t
 ones, topic exposures, change features, and full fusion models, all under leakage-audited
 conditions extending to the training provenance of the encoders themselves.
 
-### VI.2 What the study contributes
+### VII.2 What the study contributes
 
 1. **A defended benchmark rather than an asserted one.** The original "TF-IDF wins" was a single
    comparison on a single evaluation year; the same conclusion now stands against an exhaustive
@@ -533,8 +605,13 @@ conditions extending to the training provenance of the encoders themselves.
    signal is absorbed into the structured features during the call-to-filing gap, which
    identifies when an additional text source is worth attaching: only while its information has
    not yet been impounded into cheaper, fresher predictors.
+6. **Suggestive evidence that the text increment is state-dependent.** Conditioning the text
+   increment on pre-filing insider activity (Part VI) indicates it concentrates in firms whose
+   insiders disagree and thins in firms whose insiders have recently traded heavily — the
+   cross-sectional counterpart of the absorption reading, subject to the bounds stated in
+   Part VI.
 
-### VI.3 Honest caveats
+### VII.3 Honest caveats
 
 The text increment on ranking is statistically suggestive, not conclusive (p = 0.057 over twelve
 years); each additional evaluation year tightens it. The frozen-encoder staleness handicap in the
@@ -542,8 +619,11 @@ clean-protocol test is real and only bounded, not removed, by the original-ftvol
 Cross-sectional level R² in individual backtest years is noisy and sometimes negative; the ranking
 metric is the reliable lens. The Stage C horizon-contrast interpretation (tone absorbed between
 call and filing) is a plausible reading supported by the results, not a demonstrated mechanism.
+The same holds for the Stage E conditioning results: two conditioners over two windows with no
+multiplicity adjustment, effects concentrated from 2018 onward — suggestive and directionally
+consistent, not confirmatory.
 
-### VI.4 Open questions
+### VII.4 Open questions
 
 1. Does per-window encoder retraining (twelve GPU fine-tunes) close any of the out-of-period gap,
    or is the era-specificity fundamental? Out of scope for the current timeline; the design is
@@ -554,6 +634,9 @@ call and filing) is a plausible reading supported by the results, not a demonstr
 3. Does the struct+tfidf increment cross p = 0.05 as evaluation years accumulate?
 4. How does the dual-contrastive replication compare quantitatively with Chiu et al. (2025) on
    their own task, as opposed to on ours?
+5. Does the state-dependence of the text increment (Part VI) replicate under other
+   information-environment conditioners — most naturally news coverage intensity and news tone
+   dispersion — and does the disagreement effect strengthen as evaluation years accumulate?
 
 ---
 

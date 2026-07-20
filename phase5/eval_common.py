@@ -43,7 +43,8 @@ TOPIC_OUT = ROOT / "topics" / "out"
 
 EPS = 1e-6
 ALPHAS = np.logspace(-2, 3, 20)
-TEST_YEARS = list(range(2018, 2025))   # expanding-window test years (2018..2024)
+TEST_YEARS = list(range(int(os.environ.get("RISK_TEST_START", "2018")), 2025))
+# expanding-window test years (default 2018..2024; RISK_TEST_START=2013 -> the 12-year window)
 MIN_TRAIN_YEAR = 2007                  # earliest labelled year with full coverage
 
 
@@ -192,6 +193,24 @@ def call_matrix(df):
     mf = pd.read_parquet(CALL_FEATURES)
     mf["filing_date"] = pd.to_datetime(mf["filing_date"])
     cols = [c for c in mf.columns if c.startswith("call_")]
+    key = df[["ticker", "filing_date"]].copy()
+    key["filing_date"] = pd.to_datetime(key["filing_date"])
+    merged = key.merge(mf, on=["ticker", "filing_date"], how="left")
+    return merged[cols].to_numpy(dtype=float), cols
+
+
+FORM4_FEATURES = ROOT / "datasets" / "form4_features.parquet"
+
+
+def form4_matrix(df):
+    """Merge Form 4 insider features onto panel rows by (ticker, filing_date). (None, []) if not
+    built. Trailing pre-filing windows (build_form4_features.py) -> leakage-free, full 2006+
+    coverage -> valid in both backtest windows."""
+    if not FORM4_FEATURES.exists():
+        return None, []
+    mf = pd.read_parquet(FORM4_FEATURES)
+    mf["filing_date"] = pd.to_datetime(mf["filing_date"])
+    cols = [c for c in mf.columns if c.startswith("f4_")]
     key = df[["ticker", "filing_date"]].copy()
     key["filing_date"] = pd.to_datetime(key["filing_date"])
     merged = key.merge(mf, on=["ticker", "filing_date"], how="left")

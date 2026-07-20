@@ -215,7 +215,72 @@ value are precisely the ones the 10-K prediction task imposes (a later anchor wi
 structured information). 12-yr window run skipped — the 7-yr null is flat (p≈0.4) and a wider
 window can only re-confirm it.
 
+## Stage E — Form 4 insider features × risk text (2026-07-19, complete)
+
+**Data & features.** `form4_transactions.csv` (SEC insider-transactions structured flat files,
+1.67M non-derivative rows, 645 S&P 500 issuers, 2006–2025; re-hosted at HF
+`SarthakVishnu/dissertation-dataset`, `form4/`). `build_form4_features.py`: per filing, eight
+`f4_*` intensity/dispersion features over the trailing window (filing−180d, filing−3d] — the 3-day
+margin covers Form 4's 2-business-day disclosure lag, so every feature is public at prediction
+time. CIK-primary join, ticker fallback. Coverage is effectively total: **7,367/7,367 panel
+filings in the Form 4 universe** (8,039/8,105 filings with window activity), every year 2006–2026
+— so unlike calls, Stage E rows are valid in *both* backtest windows. The mildly negative median
+`f4_abn_intensity` in every year is the pre-10-K blackout period showing up in the data (insiders
+trade less just before the filing than in their trailing-365d baseline) — construct validity, not
+an artifact. (~10 keyed-date-error rows in the raw CSV span 1990–2031; none can fall in a valid
+window.)
+
+**1) Level effect (paired ladder rows, `run_fusion.py`, both windows):** null everywhere.
+
+| lane (same head) | 7-yr mean IC | dIC | p | 12-yr mean IC | dIC | p |
+|---|---|---|---|---|---|---|
+| struct+form4 [hgb] vs structured [hgb] | 0.519 vs 0.518 | +0.000 | 0.897 | 0.591 vs 0.589 | +0.001 | 0.768 |
+| struct+tfidf+form4 vs struct+tfidf [ridge] | 0.562 vs 0.561 | +0.000 | 0.886 | 0.613 vs 0.614 | −0.001 | 0.585 |
+
+val-2025 agrees: struct+form4 0.551 (vs structured 0.556), struct+tfidf+form4 0.610 (vs 0.610).
+Insider-activity levels are already spanned by the structured block — consistent with the
+structured features themselves (realised vol, drawdown, turnover) reflecting whatever elevated
+insider activity accompanies.
+
+**2) Text-increment conditioning (`form4_text_conditioning.py` — the pre-registered question:
+does the text increment concentrate where insider activity is high?)** Anchors reproduced inside
+the script (unconditional +0.016 p=0.098 / +0.011 p=0.057). Within-year median splits of the test
+cross-section (strict split; for `f4_disagreement`, whose within-year median is 0, this contrasts
+"any insider disagreement" — ~22% of firms — against none):
+
+| conditioner | window | mean(high−low ΔIC) | t | p | sign consistency |
+|---|---|---|---|---|---|
+| f4_abn_intensity | 7-yr | **−0.012** | −2.67 | 0.037 | negative 6/7 years |
+| f4_abn_intensity | 12-yr | −0.006 | −1.28 | 0.227 | negative 7/12 |
+| f4_disagreement | 7-yr | **+0.029** | +2.04 | 0.088 | positive 6/7 years |
+| f4_disagreement | 12-yr | +0.016 | +1.51 | 0.158 | positive 8/12 |
+
+**Verdict.** The pre-registered direction (larger text increment in the high half) holds for
+**disagreement** and is reversed for **abnormal intensity** — and the two results are more
+coherent together than either alone. A plausible reading (interpretation, not established
+mechanism): the two conditioners proxy different stages of the information process. Abnormal
+trading *intensity* is itself a transmission channel — Form 4s are public within two business
+days, so where insiders have traded heavily, their information is already flowing into prices and
+the disclosure text has less left to add (the low-intensity half is where the text increment
+lives: ΔIC_low > ΔIC_high in 6/7 recent years). Insider *disagreement*, by contrast, marks
+unresolved dispersion among the best-informed parties — precisely the state in which narrative
+disclosure would still carry incremental information, and there the text increment is 3–4× its
+unconditional size (e.g. +0.083 in 2021, +0.132 in 2023 within the disagreement half). This
+extends the Stage C absorption narrative from the time dimension (call vs filing anchor) to the
+cross-section (which *firms* text helps on). Bounds on the claim, stated plainly: two conditioners
+× two windows with no multiplicity adjustment, p-values 0.037–0.227, both effects attenuate as the
+window extends back to 2013 (the pattern is concentrated in 2018+), and the disagreement high-cell
+is small (52–89 firms/year). Stage E therefore closes as: **no level effect, plus suggestive,
+directionally consistent evidence that the text increment is state-dependent** — largest where
+informed parties disagree and smallest where they have already traded.
+
 ## Run log
+
+- 2026-07-19 — job 3557942 (Teaching, 2 CPU, 2h18m): full Stage E chain — feature build,
+  fusion ladder both windows (first 12-yr run with the `RISK_TEST_START` switch), conditioning
+  both windows. All prior anchors reproduced exactly (struct+tfidf 0.561/0.614; unconditional
+  text increment +0.016 p=0.098 / +0.011 p=0.057). Level rows null; conditioning signed as above.
+  STAGE E COMPLETE.
 
 - 2026-07-18 — job 3557338 (Teaching, 2 CPU): full fusion ladder with calls rows. Backtest
   struct+calls −0.004 (p=0.395) vs structured; struct+tfidf+calls −0.001 (p=0.436) vs
