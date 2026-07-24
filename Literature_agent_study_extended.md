@@ -475,6 +475,144 @@ across years.
 
 ---
 
+## 8. Insider Trading and Information Asymmetry (Part VI)
+
+Part VI (Stage E) extends the study with SEC Form 4 insider-trading features. Two citations are
+load-bearing here: the routine/opportunistic trade classification (Cohen, Malloy & Pomorski 2012)
+and the statutory Form 4 filing deadline. Four further design claims (A–D below) were checked
+against candidate papers; three have no PDF currently in the dirs and are flagged honestly per the
+Round 3–4 convention rather than asserted from memory.
+
+### Routine vs. Opportunistic Trade Classification
+
+> ✅ **Cohen, L., Malloy, C. & Pomorski, L. (2012). "Decoding Inside Information."
+> *Journal of Finance*, 67(3), 1009–1043.**
+> `Literature (new)/[2012] Decoding Inside Information.pdf`
+
+**PDF-verified (Round 5), with a material correction to how the study text describes the
+classification.** CMP's own definition — quoted directly, not paraphrased:
+
+> *"We require an insider to make at least one trade in each of the three preceding years to
+> define her as either an opportunistic or a routine trader. Specifically, we define a routine
+> trader as an insider who placed a trade in the same calendar month for at least three
+> **consecutive** years."* (p. 1017 / PDF p. 9)
+
+Primary classification is at the **trader** level, applied at the start of each calendar year to
+*all* of that insider's subsequent trades that year, regardless of month:
+
+> *"We thus designate all insiders as either routine traders or opportunistic traders at the
+> beginning of each calendar year, based on their past history of trades... All subsequent trades
+> ... are then placed into one of two buckets: (a) 'routine trades' (i.e., all trades made by
+> routine traders), and (b) 'opportunistic trades' (i.e., all trades made by opportunistic
+> traders)."* (p. 1017 / PDF p. 9)
+
+CMP also report a **trade-level robustness check** (Table III) that is per-month, not per-year:
+
+> *"If an insider traded a stock in the same calendar month in three consecutive years, all
+> subsequent trades that he or she made in the same month are labeled as routine and trades made
+> in a different month are labeled opportunistic. If an insider traded in three consecutive years
+> but no trades were made in the same month in these three years, all subsequent trades of that
+> insider are labeled as opportunistic as well."* (p. 1023 / PDF p. 15)
+
+And a third, **excluded** "nonclassified" bucket for insiders without the qualifying history:
+
+> *"Nonclassified trades consist of those insider trades that we cannot classify into either
+> routine or opportunistic trades, since they were made by insiders without three consecutive
+> years of past trading history."* (p. 1020 / PDF p. 12)
+
+**Comparison against our implementation** (`dataset_config/build_form4_features.py`,
+`routine_history()` / `window_features()`): a trade is scored opportunistic if
+`len([y for y in hist.get((issuer_cik, insider_cik, month)) if y < trade_year]) < 3` — i.e., fewer
+than three *any* prior years (not required to be consecutive, not restricted to a fixed look-back
+window) contain a same-calendar-month open-market trade by that insider at that issuer, and the
+classification is applied per trade. Three deviations from CMP, in descending order of severity:
+
+1. **Consecutiveness dropped.** CMP requires the three qualifying years to be *consecutive*. Our
+   implementation counts any three (or more) matching years anywhere in the insider's history —
+   e.g., 2008, 2013, and 2021 would satisfy our threshold but would not satisfy CMP's.
+2. **No fixed look-back window.** CMP examines specifically "the three preceding years" — a
+   rolling window immediately before the year being classified. Our implementation accumulates
+   matches over the insider's entire history in the 2006–2025 corpus, with no recency restriction.
+3. **No "nonclassified" bucket.** CMP explicitly *excludes* insiders without three consecutive
+   years of history from the routine/opportunistic split (a third category, not folded into either
+   bucket). Our implementation has only two states: anything short of the ≥3-match threshold
+   defaults straight into `f4_opp_frac`'s numerator (i.e., is scored as opportunistic), which
+   conflates CMP's "nonclassified" and "opportunistic" categories.
+
+One dimension is a defensible simplification rather than a deviation: our **per-trade, same-month**
+classification structurally matches CMP's own trade-level robustness check (Table III, quoted
+above), not their trader-level primary method — and CMP report that the trade-level variant
+"is robust to reasonable changes in the classification procedure" (p. 1023), i.e. they validate it
+as directionally consistent with their headline result. So building at the trade level is a
+legitimate design choice already sanctioned within the source paper; only the consecutiveness,
+window, and nonclassified-bucket points above are true deviations.
+
+**Recommended wording change (for `study_extended.md`, to be applied separately):** replace
+*"under the Cohen, Malloy and Pomorski (2012) routine-trade classification, in which a trade is
+routine if the same insider traded in the same calendar month in at least three prior years"*
+with something that names the adaptation explicitly, e.g. *"adapted from Cohen, Malloy and
+Pomorski's (2012) routine-trade classification: a trade is scored opportunistic if the same
+insider has fewer than three prior years (not required to be consecutive, and not restricted to a
+fixed look-back window) containing a same-calendar-month trade at the same issuer — a looser
+criterion than CMP's original three-*consecutive*-year trader-level test, applied here at the
+trade level as CMP's own robustness check (their Table III) also does."*
+
+### Claim A — Insider Trading as the Classic Information-Asymmetry Proxy
+
+> ❌ **FLAG — NOT SUPPORTED / NO LOCAL PDF (Round 5).** Suggested candidates — Frankel & Li (2004,
+> *J. Accounting and Economics*), Lakonishok & Lee (2001, *Rev. Financial Studies*), Kyle (1985,
+> *Econometrica*) — are **not in `Literature/` or `Literature (new)/`**, so none was verified.
+
+Three already-present, topically adjacent PDFs were checked as possible substitutes and **none**
+makes this specific claim in a directly quotable way: Boudoukh, Feldman, Kogan & Richardson (2018,
+"Information, Trading, and Volatility") studies news-driven volatility, not insider trading as an
+asymmetry proxy; James, Leung & Prokhorov (2022, "A Machine Learning Attack on Illegal Trading")
+is about detecting illegal trading, not framing insider trades as an asymmetry measure; Goldie,
+Jiang, Koch & Wintoki (2023, "Indirect Insider Trading") discusses insiders' access to private
+information but in the context of direct-vs-indirect account trades, not as a general
+information-asymmetry-proxy claim. **Recommendation:** download one of the three original
+candidates (Frankel & Li 2004 is the most direct fit) before this claim is asserted in the study.
+
+### Claim B — Disagreement Among Informed Parties and Volatility
+
+> ❌ **FLAG — NOT SUPPORTED / NO LOCAL PDF (Round 5).** Harris & Raviv (1993, *Rev. Financial
+> Studies*, "Differences of Opinion Make a Horse Race") and the alternative Shalen (1993, *Rev.
+> Financial Studies*) are **not in the dirs**. No adjacent substitute was found among the
+> already-present PDFs. This is the theoretical anchor for reading `f4_disagreement` as a
+> dispersion/uncertainty conditioner — download and verify before citing.
+
+### Claim C — Pre-Filing Blackout Periods
+
+> ❌ **FLAG — NOT SUPPORTED / NO LOCAL PDF (Round 5).** Bettis, Coles & Lemmon (2000, *J. Financial
+> Economics*, "Corporate policies restricting trading by insiders") is **not in the dirs**.
+> **Note:** the study's own claim here is an internally validated empirical observation — *"median
+> abnormal intensity is mildly negative in every year"* — which does not strictly require an
+> external citation to stand. An external citation is only needed if the text wants to frame the
+> blackout pattern as a *known* phenomenon rather than a fresh observation from this data; if so,
+> download Bettis, Coles & Lemmon (2000) before citing it.
+
+### Claim D — Form 4's Two-Business-Day Filing Deadline (Statutory, not a Paper)
+
+> ✅ **Sarbanes-Oxley Act of 2002, Pub. L. No. 107-204, §403, 116 Stat. 745, 788 (2002), amending
+> the Securities Exchange Act of 1934, §16(a); codified as amended at 15 U.S.C. §78p(a)(2)(C).**
+
+**Verified (Round 5) against Cornell Law School's Legal Information Institute** (authoritative
+public codification of the U.S. Code), cross-checked against contemporaneous law-firm summaries of
+the SEC's implementing rule adoption:
+
+> *"before the end of the second business day following the day on which the subject transaction
+> has been executed"* — 15 U.S.C. §78p(a)(2)(C).
+
+Section 403 of Sarbanes-Oxley amended Exchange Act §16(a) to shorten the reporting deadline from
+the pre-2002 requirement (within 10 days after the close of the calendar month) to two business
+days; the SEC adopted implementing rules on August 27, 2002, effective August 29, 2002. This is a
+statutory fact, not an academic claim — cite the statute/U.S. Code section directly rather than a
+paper. Confirms the `DISCLOSURE_LAG_DAYS = 3` margin in `build_form4_features.py` is conservative
+relative to the 2-business-day legal deadline (the extra day covers the business/calendar-day
+distinction and any same-day filing latency).
+
+---
+
 ## Quick Reference Table
 
 | # | Claim | Paper | Venue / Year | In Dirs? |
@@ -506,14 +644,19 @@ across years.
 | 7 | Temporal distribution shift in fin. NLP | Magner et al. (2025) | Finance Res. Lett. | ✅ Yes |
 | 7 | BoW > dense embeddings on financial STS | FinMTEB Su et al. (2025) | EMNLP | ✅ Yes |
 | 7 | Concept drift definition / survey | Lu, Liu, Dong & Gama (2019) | IEEE TKDE | ✅ Yes |
+| 8 | Routine/opportunistic trade classification (adapted — see deviations) | Cohen, Malloy & Pomorski (2012) | JF | ✅ Yes |
+| 8 | Insider trading as info-asymmetry proxy | *(Frankel & Li 2004 / Lakonishok & Lee 2001 / Kyle 1985 — candidates)* | — | ❌ No |
+| 8 | Informed-party disagreement ↔ volatility | *(Harris & Raviv 1993 / Shalen 1993 — candidates)* | — | ❌ No |
+| 8 | Pre-filing insider-trading blackout periods | *(Bettis, Coles & Lemmon 2000 — candidate)* | — | ❌ No |
+| 8 | Form 4 two-business-day filing deadline | Sarbanes-Oxley Act 2002 §403 / 15 U.S.C. §78p(a)(2)(C) | Statute | ✅ Yes (statutory) |
 
 ---
 
-**Status summary:** as of Round 4, **all 24 citations have a local PDF** in `Literature/` or
-`Literature (new)/` — the four previously-missing items (Lopez de Prado 2018, Grinold & Kahn 1999,
-Kravet & Muslu 2013, Lipton & Steinhardt 2019) were supplied, and the Diebold & Mariano scan was
-replaced with a searchable 1995 original. Every content, numeric, and bibliographic claim has now
-been verified against its PDF (Rounds 3–4).
+**Status summary:** as of Round 4, all 24 original citations had a local PDF in `Literature/` or
+`Literature (new)/`. **Round 5 adds Part VI (insider trading):** 2 of 5 new citations are verified
+(Cohen, Malloy & Pomorski 2012 — adapted, with 3 documented deviations; the Form 4 filing-deadline
+statute). 3 remain flagged NOT SUPPORTED / NO LOCAL PDF (Claims A–C) pending download of a
+candidate paper. **Running total: 26 of 29 citations verified against a source; 3 flagged.**
 
 ---
 
@@ -663,3 +806,62 @@ edition year (1999 vs 2000), and — should you prefer to cite the reprint — t
 1995-vs-2002 choice.
 
 *Last updated: 2026-07-07 (verification round 4 — five downloaded PDFs).*
+
+---
+
+## Verification Log — Round 5 (2026-07-07, Part VI insider-trading citations)
+
+New citations introduced by Part VI (Stage E, SEC Form 4 insider-trading features) were checked
+against the same standard: open the PDF, quote the exact passage, section/page. One item (Claim D)
+is a statutory fact rather than an academic paper and was verified against Cornell Law School's
+Legal Information Institute (authoritative public U.S. Code codification), cross-checked against
+contemporaneous law-firm summaries of the SEC's implementing rule adoption.
+
+**Task 1 — MANDATORY: Cohen, Malloy & Pomorski (2012), "Decoding Inside Information"**
+
+- **Bibliographic record:** SUPPORTED. *Journal of Finance*, Vol. LXVII, No. 3, June 2012 — front
+  matter confirmed; journal pagination 1009–1043 (PDF pages 1–35).
+- **Routine-trader definition:** SUPPORTED, with a **material correction** to how `study_extended.md`
+  currently describes it. CMP require the qualifying years to be **consecutive** (*"at least three
+  consecutive years"*, p. 1017) and restrict the lookback to *"the three preceding years"* — a fixed
+  rolling window, not any three years across full history. `study_extended.md`'s current wording
+  ("in at least three prior years") omits "consecutive" and the fixed-window restriction.
+- **Classification level:** SUPPORTED, with nuance. CMP's **primary** method (used for their
+  headline 82 bps/month result) is **trader-level**: an insider is classified once per year and
+  *all* their trades that year (any month) inherit the label (p. 1017). CMP additionally report a
+  **trade-level, per-month robustness check** (Table III, p. 1023) that is structurally the closest
+  match to our per-trade implementation — and CMP validate that this variant is "robust to
+  reasonable changes in the classification procedure," so building at the trade level is a
+  defensible design choice grounded in the source paper, not a deviation.
+- **Comparison against `dataset_config/build_form4_features.py`:** three deviations identified and
+  quoted above in §8 — dropped consecutiveness requirement, no fixed look-back window (accumulates
+  over full 2006–2025 history instead of "the three preceding years"), and no "nonclassified"
+  exclusion bucket (CMP's third category is folded into "opportunistic" in our implementation).
+  Recommended wording change for `study_extended.md` supplied in §8 (not applied — per instructions,
+  wording changes to `study_extended.md` are made separately).
+
+**Task 2 — anchor candidates for Claims A–D**
+
+| Claim | Verdict | Reason |
+|---|---|---|
+| A — insider trading as info-asymmetry proxy | ❌ NOT SUPPORTED / NO LOCAL PDF | Frankel & Li (2004), Lakonishok & Lee (2001), Kyle (1985) not in dirs. Three adjacent already-present PDFs checked (Boudoukh et al. 2018; James, Leung & Prokhorov 2022; Goldie et al. 2023) — none makes this specific claim quotably. |
+| B — informed-party disagreement ↔ volatility | ❌ NOT SUPPORTED / NO LOCAL PDF | Harris & Raviv (1993), Shalen (1993) not in dirs; no adjacent substitute found. |
+| C — pre-filing blackout periods | ❌ NOT SUPPORTED / NO LOCAL PDF | Bettis, Coles & Lemmon (2000) not in dirs. Note: the study's blackout observation is self-evidenced from the data (median abnormal intensity negative every year) and does not strictly require this citation unless framing it as a *known* phenomenon. |
+| D — Form 4 two-business-day deadline | ✅ SUPPORTED (statutory) | 15 U.S.C. §78p(a)(2)(C), as amended by Sarbanes-Oxley Act 2002 §403: *"before the end of the second business day following the day on which the subject transaction has been executed."* Verified via Cornell LII; SEC implementing rules effective 2002-08-29. |
+
+**Recommended downloads (if these claims are to be asserted rather than dropped):**
+1. Frankel, R. & Li, X. (2004). "Characteristics of a firm's information environment and the
+   information asymmetry between insiders and outsiders." *Journal of Accounting and Economics*,
+   37(2), 229–259. (Best fit for Claim A.)
+2. Harris, M. & Raviv, A. (1993). "Differences of Opinion Make a Horse Race." *Review of Financial
+   Studies*, 6(3), 473–506. (Claim B.)
+3. Bettis, J.C., Coles, J.L. & Lemmon, M.L. (2000). "Corporate policies restricting trading by
+   insiders." *Journal of Financial Economics*, 57(2), 191–220. (Claim C — optional; the study's
+   own data already supports the observation without this citation.)
+
+**Net result:** Part VI now has 2 of 5 citations PDF/statute-verified (the load-bearing CMP
+classification, corrected, and the Form 4 deadline). 3 remain honestly flagged pending download.
+`study_extended.md` itself was **not edited** in this round — the recommended CMP wording change is
+recorded above for separate application.
+
+*Last updated: 2026-07-07 (verification round 5 — Part VI insider-trading citations).*
