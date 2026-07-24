@@ -508,8 +508,14 @@ risk language, not its year-over-year shift.
 
 ## Part V — Earnings-call tone: a horizon-contrast finding
 
-Stage C asks whether a second text modality, the earnings call, adds signal. The question was
-answered in two steps at two different anchors, and the contrast between them is the finding.
+Stage C asks whether a second text modality, the earnings call, adds signal. Predicting
+volatility from earnings-call text is itself an established task: Qin and Yang (2019) and Yang et
+al. (2020, HTML) supervise text encoders on call transcripts against a volatility target, and
+Sawhney et al. (2020, VolTAGE) model call tone for volatility specifically. Stage C imports that
+modality into the present incremental-value protocol, asking not whether call tone predicts
+volatility in isolation — which the prior work establishes — but whether it adds signal over the
+structured baseline and the 10-K text. The question was answered in two steps at two different
+anchors, and the contrast between them is the finding.
 
 The first step was call-anchored. The initially available calls postdated the 10-K filings, so
 the pilot asked whether a call's tone predicts the 30-day volatility following the call itself.
