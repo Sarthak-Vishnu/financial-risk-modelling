@@ -555,9 +555,12 @@ Eight features are computed per filing: transaction and distinct-insider counts,
 count and by value, insider disagreement (the fraction of trading insiders on the minority
 buy-or-sell side of their firm's window), the officer sell fraction, abnormal trading intensity
 (the window trade rate against the firm's own trailing-365-day rate), and the opportunistic
-fraction under the Cohen, Malloy and Pomorski (2012) routine-trade classification, in which a
-trade is routine if the same insider traded in the same calendar month in at least three prior
-years.
+fraction, adapted from Cohen, Malloy and Pomorski's (2012) routine-trade classification: a trade
+is scored opportunistic unless the same insider traded in the same calendar month in at least
+three prior years. This is a deliberately weaker criterion than CMP's original test — the three
+qualifying years need not be consecutive and are not confined to a fixed look-back — applied here
+at the trade level, as CMP's own robustness check (their Table III) also does, rather than at the
+trader level of their primary specification.
 
 The construction inherits every discipline of the study. Features aggregate a trailing window
 from 180 to 3 days before each filing date; the three-day margin covers Form 4's two-business-day
