@@ -442,10 +442,13 @@ tone and the indices; the further inference that "a model trained on one period 
 cleanly to another" is our extrapolation for the temporal-drift argument, not a claim Magner et al.
 state directly.
 
-> ✅ **Su, Y. et al. (2025). "FinMTEB: Finance Massive Text Embedding Benchmark." *EMNLP 2025*.**
+> ✅ **Tang, Y. & Yang, Y. (2025). "FinMTEB: Finance Massive Text Embedding Benchmark."
+> *Proceedings of EMNLP 2025*, 3620–3638.**
 > `Literature/[2025; EMNLP] FinMTEB Finance Massive Text Embedding Benchmark.pdf`
 
-*(Corrected in Round 2; BoW finding PDF-verified in Round 3.)* FinMTEB contains NO across-time
+*(Corrected in Round 2; BoW finding PDF-verified in Round 3; author name corrected in Round 7 —
+see log below, this document previously misattributed the paper to "Su, Y. et al.," which does not
+match any author on the PDF.)* FinMTEB contains NO across-time
 evaluation and no temporal-shift analysis; do not cite it for temporal drift. Its relevant finding
 is that bag-of-words representations outperform dense embedding models on financial STS tasks —
 **verified quote:** *"traditional Bag-of-Words (BoW) models unexpectedly surpass all tested dense
@@ -693,6 +696,8 @@ requiring any new download. Cite this instead.
 | # | Claim | Paper | Venue / Year | In Dirs? |
 |---|---|---|---|---|
 | 1a | Volatility persistence / HAR-RV | Corsi (2009) | J. Financial Econometrics | ✅ Yes |
+| 1a | Longer windows smoother/more persistent | Corsi (2009) | J. Financial Econometrics | ✅ Yes |
+| 1a | "30 trading days is the standard monthly window" | *(no supporting paper — Corsi's own monthly window is 22 days, not 30)* | — | ❌ NOT SUPPORTED |
 | 1b–e | Size, leverage, B/M, beta, IVOL | Ang, Hodrick, Xing & Zhang (2006) | JF | ✅ Yes |
 | 1d | Book-to-market as risk factor | Fama & French (1992) | JF | ✅ Yes |
 | 1f | Amihud illiquidity | Amihud (2002) | J. Financial Markets | ✅ Yes |
@@ -717,7 +722,7 @@ requiring any new download. Cite this instead.
 | 7 | Task-supervised encoder → volatility | Qin & Yang (2019) | ACL | ✅ Yes |
 | 7 | Task-supervised encoder → volatility | Yang et al. HTML (2020) | WWW 2020 | ✅ Yes |
 | 7 | Temporal distribution shift in fin. NLP | Magner et al. (2025) | Finance Res. Lett. | ✅ Yes |
-| 7 | BoW > dense embeddings on financial STS | FinMTEB Su et al. (2025) | EMNLP | ✅ Yes |
+| 7 | BoW > dense embeddings on financial STS | FinMTEB Tang & Yang (2025) | EMNLP 2025 | ✅ Yes |
 | 7 | Concept drift definition / survey | Lu, Liu, Dong & Gama (2019) | IEEE TKDE | ✅ Yes |
 | 8 | Routine/opportunistic trade classification (adapted — see deviations) | Cohen, Malloy & Pomorski (2012) | JF | ✅ Yes |
 | 8 | Insider trading as info-asymmetry proxy | Frankel & Li (2004) | J. Acct. & Econ. | ✅ Yes |
@@ -1008,3 +1013,164 @@ assertion, including claims I introduced myself in the prior conversational turn
 formal task list).
 
 *Last updated: 2026-07-24 (verification round 6 — eight downloaded PDFs, Part VI fully resolved).*
+
+---
+
+## Verification Log — Round 7 (supervisor email citations)
+
+This round checks citations drafted for an email to the supervisor (Prof. Tiejun Ma), rather than
+the dissertation text itself. Same standard as Rounds 1–6: open the PDF, quote, section/page.
+
+### Priority 1 — Corsi (2009) and the 30-trading-day window
+
+**The sentence checked:** *"The 30 trading days is the standard monthly volatility window used in
+the realised-volatility literature (Corsi, 2009), and it gives every filing a label that closes
+inside the sample."*
+
+**(a) Corsi's monthly RV component, quoted:** *"Since the HAR model considered here employs
+monthly realized volatility (which corresponds to 22 working days), the corresponding unrestricted
+autoregressive model is an AR(22)"* (§3.2, journal p. 186). **22 working days, not 30.**
+
+**(b) Does Corsi endorse ~30 days anywhere?** No. Full-document search for "30" combined with any
+day/window language returns zero hits. The paper's only stated day-count for "monthly" is 22.
+
+**(c) Verdict: NOT SUPPORTED as written — Corsi (2009) is the wrong anchor for a 30-trading-day
+claim.** His own convention is 22 trading days for "monthly," a standard also consistent with the
+general finance convention (≈21–22 trading days per calendar month; this is not unique to Corsi).
+
+**Checked the two suggested alternative anchors — neither supports a 30-day convention either:**
+- **Kogan et al. (2009):** no occurrence of "30 day," "21 day," "22 day," or "one month" as a
+  window descriptor; their actual measurement window for volatility is stated as **12 months**
+  post-filing (confirmed in Round 3), not a monthly window at all.
+- **Campbell et al. (2014):** no occurrence of "30 day," "21 day," "22 day," "one month," or a
+  stated day-count window in the passages checked.
+
+**No paper currently in the dirs supports "30 trading days is the standard monthly window."** This
+is not a citation-selection problem I can solve by picking a different paper — the literature's
+actual convention (Corsi included) is closer to 21–22 trading days, and 30 trading days is not
+literally "monthly" in that convention. One more relevant fact, from the codebase rather than the
+literature: `dataset_config/compute_volatility_labels.py` defines `WINDOW = 30 # trading-day
+window` explicitly as **30 trading days**, not 30 calendar days — so the gap versus Corsi's 22 is
+real, not a calendar-day/trading-day mismatch that would narrow it.
+
+**Proposed replacement wording** (two options, your call on framing):
+
+1. *Drop the "standard ... literature" framing and state it as this study's own design choice:*
+   "We use a 30-trading-day forward window (roughly six weeks), which keeps every filing's label
+   inside the sample; this is close to, but not identical with, the ~21–22 trading-day 'monthly'
+   convention used in the realised-volatility literature (e.g. Corsi, 2009)."
+2. *Keep a literature analogy but make it accurate:* "The window length is close to the ~1-month
+   realised-volatility horizon used in the HAR-RV literature (Corsi, 2009, defines 'monthly' as 22
+   trading days); we use a slightly longer 30-trading-day window so that every filing's label
+   closes inside the sample."
+
+**Second use of Corsi (2009) — checked separately, as requested, and this one is fine.**
+*"weekly and monthly realized volatilities, being averages over longer periods, arguably contain
+less noise and more information on the volatility process, and, hence, receive higher weights from
+the model"* (journal p. 187). **SUPPORTED** — this directly backs "longer volatility windows are
+smoother/more persistent, and trailing multi-horizon realised-volatility features capture that
+persistent component." Keep this citation as is; it is unaffected by the Priority 1 finding above.
+
+### Priority 2 — FinMTEB author-name discrepancy
+
+**Correct citation, verified against the PDF's own front matter:** Tang, Y. & Yang, Y. (2025).
+"FinMTEB: Finance Massive Text Embedding Benchmark." *Proceedings of the 2025 Conference on
+Empirical Methods in Natural Language Processing (EMNLP)*, 3620–3638. The Hong Kong University of
+Science and Technology. **There is no author named "Su" anywhere on this paper.**
+
+**Correction to your description of where the error is:** you described the two documents as
+disagreeing (`Literature_agent_study_extended.md` = "Tang & Yang," `QnA_from_Prof_Ma.md` = "Su et
+al."). On inspection, **that's not what's currently in either file — both currently say "Su et
+al."** `Literature_agent_study_extended.md` has it in four places (main entry, quick-reference
+table, and two historical verification-log entries from Rounds 1 and 3); `QnA_from_Prof_Ma.md` has
+it in two places (lines 124 and 186). **This is my own error**, introduced when I first verified
+this paper in an earlier round and never caught in subsequent re-uses of the citation, including
+the two later rounds (3 and 6) where I re-checked FinMTEB's *content* but never re-checked the
+*author name* against the PDF's front matter.
+
+**Fixed in this file (Round 7):** the main §7 entry and the Quick Reference Table row now read
+"Tang, Y. & Yang, Y. (2025)." The two historical log entries (Round 1, Round 3) were **left as
+written** — they're a record of what was checked at the time, consistent with how this document
+has always handled earlier-round errors (e.g. the SBERT/Longformer citation saga in Rounds 1–2).
+
+**`QnA_from_Prof_Ma.md` still needs the same fix — not applied here, per your instruction.** Both
+occurrences ("Su et al. 2025," lines 124 and 186) should become "Tang & Yang (2025)."
+
+**Claim re-confirmed:** *"the FinMTEB benchmark ... reports that bag-of-words representations
+outperform dense embedding models on financial text"* — **SUPPORTED**, same quote verified in
+Round 3: *"traditional Bag-of-Words (BoW) models unexpectedly surpass all tested dense embedding
+models on financial STS tasks"* (§1/§2). Minor precision note: the paper's finding is specifically
+about financial **STS (semantic textual similarity) tasks**, not "financial text" in general — a
+reasonable generalisation for an email, but worth knowing the paper's own scope is narrower.
+
+### Priority 3 — reference list, field by field
+
+| Entry | Verdict | Note |
+|---|---|---|
+| Corsi (2009), JFE 7(2), 174–196 | ✅ Exact match | Front matter: *"Journal of Financial Econometrics, 2009, Vol. 7, No. 2, 174–196."* |
+| Frankel & Li (2004), JAE 37(2), 229–259 | ✅ Exact match | Front matter: *"Journal of Accounting and Economics 37 (2004) 229–259."* |
+| Shalen (1993), RFS 6(2), 405–434 | ✅ Exact match | Front matter: *"The Review of Financial Studies, 1993, Vol. 6, No. 2 (1993), pp. 405-434."* |
+| Cohen, Malloy & Pomorski (2012), JF 67(3), 1009–1043 | ✅ Exact match | Confirmed page 1009 (first body page reads "1010" on the following page) through page 1043 (last page of text, before references). |
+| Qin & Yang (2019), ACL 2019, 390–401 | ✅ Exact match | *"Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, pages 390–401."* |
+| Sawhney et al. (2020) VolTAGE, EMNLP 2020, 8001–8013 | ✅ Exact match, all 6 authors correct | *"Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing, pages 8001–8013."* Authors on the PDF: Ramit Sawhney, Piyush Khanna, Arshiya Aggarwal, Taru Jain, Puneet Mathur, Rajiv Ratn Shah — matches your list exactly, including initials. |
+| Tang & Yang (2025) FinMTEB, "arXiv preprint" | ❌ **Venue wrong** | Author names in *your* draft list are already correct (Tang & Yang) — only `Literature_agent_study_extended.md` and `QnA_from_Prof_Ma.md` had the wrong author, see Priority 2. But **the venue in your draft is wrong**: this is not an arXiv preprint, it is a peer-reviewed paper in *Proceedings of EMNLP 2025*, pp. 3620–3638. Fix the reference-list entry to: "Tang, Y. and Yang, Y. (2025). FinMTEB: Finance Massive Text Embedding Benchmark. *Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing*, 3620–3638." |
+| Lopez de Prado (2018), *Advances in Financial Machine Learning*, Wiley | ✅ Match | Copyright page: *"Copyright © 2018 by John Wiley & Sons, Inc. ... Published by John Wiley & Sons, Inc., Hoboken, New Jersey."* Full author name on the book is "Marcos López de Prado" (with the accent) — "Lopez de Prado, M." is a standard abbreviated form, no correction needed. |
+
+**Summary: 7 of 8 entries exactly correct as drafted. 1 error (FinMTEB venue) — fix as shown above.**
+
+### Priority 4 — claim-to-citation reuse checks
+
+- **Frankel & Li (2004)** for "insider trading used as a signal of information asymmetry between
+  managers and the market": **SUPPORTED**, with a minor wording note. The paper's own phrase is
+  *"The information asymmetry between managers and investors is a fundamental issue"* (p. 1) — it
+  says "managers and investors," not "managers and the market." A fair paraphrase (investors are
+  the market side of the transaction) but worth knowing the paper's own noun.
+- **Shalen (1993)** for "disagreement among informed parties drives volatility": **SUPPORTED** in
+  substance, with a terminology note. Shalen's own actors are called **"speculators,"** who
+  *"filter from current prices private information"* and whose *"dispersion of price expectations"*
+  drives the extra volatility (p. 405 and following) — she does not use the phrase "informed
+  parties." The underlying mechanism (dispersed beliefs about private information → volatility)
+  matches the email's claim; "informed parties" is your gloss on "speculators," not Shalen's term.
+- **Cohen, Malloy & Pomorski (2012)** "adapted from" description: **your characterisation is
+  accurate.** "Any three prior years counted per trade" (your implementation) versus "three
+  consecutive years counted per insider" (CMP's primary method) correctly captures the two biggest
+  deviations found in Round 5/6 verification (consecutiveness, and trader-level vs. trade-level).
+  One nuance not mentioned in your one-line gloss, for completeness: CMP's primary method also
+  restricts to a fixed look-back window ("the three preceding years" specifically), whereas your
+  implementation has no such window restriction — this is a third, smaller deviation beyond the two
+  you named. Not wrong, just incomplete if precision matters for this audience.
+- **Qin & Yang (2019) and Sawhney et al. (2020)** for "earlier work that predicts volatility from
+  call transcripts": **this overstates both papers, not just VolTAGE.** You flagged VolTAGE as
+  multimodal — correct, its own title is "Volatility Forecasting via Text **Audio** Fusion" and it
+  explicitly combines FinBERT text encoding with acoustic features (Harmonics-to-Noise Ratio, etc.).
+  **But Qin & Yang (2019) is equally multimodal** — its own title is "Predicting Financial Risk
+  Using **Verbal and Vocal** Cues," and the paper (checked pages 1–3) contains 26 mentions of
+  "audio," 14 of "vocal," and 11 of "multimodal." Neither paper predicts volatility from transcript
+  text alone. Suggested rewording: *"earlier work that predicts volatility from earnings-call
+  audio and transcripts jointly (Qin & Yang 2019; Sawhney et al. 2020)"* — or, if you specifically
+  want a text-only precedent, cite Yang et al. (2020) HTML instead, which does use text-only
+  (WWM-BERT) at the token-level stage (verified Round 3).
+- **Lopez de Prado (2018)** for "expanding walk-forward evaluation": **SUPPORTED.** Chapter
+  numbers, as established in Round 4: **Chapter 12, "Backtesting through Cross-Validation,"
+  §12.2 "The Walk-Forward Method"** is the direct citation for walk-forward specifically; **Chapter
+  7, "Cross-Validation in Finance,"** §7.3 "Why K-Fold CV Fails in Finance" is the companion
+  citation for why a lookahead-free, non-shuffled protocol is required in the first place. Cite
+  both if space allows; Ch. 12 alone suffices if only one is wanted.
+
+### Net result
+
+- **1 sentence needs rewording** (Priority 1 — the 30-day/Corsi claim; two replacement options
+  given above; no paper in the dirs supports the original wording).
+- **1 author-name error, mine, now fixed in this file** in the live entries; `QnA_from_Prof_Ma.md`
+  still needs the same fix (not applied, per instruction).
+- **1 reference-list venue error** (FinMTEB: EMNLP 2025 proceedings, not arXiv) — author names in
+  your own draft were already correct.
+- **1 claim overstates two citations at once** (Qin & Yang + VolTAGE — both are audio+text
+  multimodal, not transcript-only); reworded suggestion given.
+- **Everything else checked (Corsi's second use, Frankel & Li, Shalen's substance, CMP's
+  characterisation, Lopez de Prado's chapters, and 7 of 8 reference-list entries) is accurate as
+  drafted.**
+
+`study_extended.md` and Sections 1–7 of this file were not touched in this round.
+
+*Last updated: 2026-07-25 (verification round 7 — supervisor email citations).*
