@@ -121,7 +121,7 @@ on this task under any admissible protocol** (Part II.3 and III.3):
   supervised encoder collapses out-of-period: −0.06 IC against struct+tfidf, statistically zero
   against the structured features alone.
 - The kitchen-sink fusion of every representation at once also does not beat the count model.
-- This direction has independent support: the FinMTEB benchmark (Su et al. 2025) reports
+- This direction has independent support: the FinMTEB benchmark (Tang and Yang 2025) reports
   bag-of-words outperforming dense embedding models on financial semantic tasks.
 
 The positive characterisation matters more than the null: **task alignment, not model modernity
