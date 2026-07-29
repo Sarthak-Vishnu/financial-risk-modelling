@@ -304,7 +304,7 @@ test in at least one head. The inclusion of bge settles the "you never tried a s
 embedder" objection: it loses too, even with the full text delivered through the windowed
 protocol. The direction of this result has independent support: the FinMTEB benchmark reports that
 bag-of-words representations outperform dense embedding models on financial semantic-similarity
-tasks (Su et al. 2025), so count-based representations beating dense ones on financial text is a
+tasks (Tang and Yang 2025), so count-based representations beating dense ones on financial text is a
 documented phenomenon, not an idiosyncrasy of this pipeline. The only encoders that reach statistical parity with the count model are the two that were
 trained on the volatility task itself, ftvol and volaware. Task alignment, not model modernity, is
 what closes the gap. None of the parity rows beats the reference, and the kitchen-sink fusion of
@@ -554,8 +554,10 @@ is informative; at the filing horizon the 10-K task already possesses fresher in
 Stage E extends the study with a third information source, insider transactions reported on SEC
 Form 4, chosen not as another candidate feature family but because it speaks directly to the
 mechanism the study has converged on. Insider trading is the classic observable proxy for
-information asymmetry, and information asymmetry is a volatility construct: it measures how much
-material information is concentrated in few hands, not which direction that information points.
+information asymmetry — Frankel and Li (2004) use the profitability and intensity of insider
+trades for exactly this purpose — and information asymmetry is a volatility construct: it
+measures how much material information is concentrated in few hands, not which direction that
+information points.
 Every feature is accordingly framed as intensity or dispersion rather than as a trading signal.
 Eight features are computed per filing: transaction and distinct-insider counts, net direction by
 count and by value, insider disagreement (the fraction of trading insiders on the minority
@@ -570,12 +572,16 @@ trader level of their primary specification.
 
 The construction inherits every discipline of the study. Features aggregate a trailing window
 from 180 to 3 days before each filing date; the three-day margin covers Form 4's two-business-day
-disclosure deadline, so every feature is public at prediction time. Matching is by CIK with a
+disclosure deadline, statutory since Sarbanes-Oxley §403 (codified at 15 U.S.C. §78p(a)(2)(C)),
+so every feature is public at prediction time. Matching is by CIK with a
 ticker fallback. Coverage is effectively complete — every panel filing falls inside the Form 4
 universe, in every year from 2006 — so, unlike the calls family, these lanes are valid over both
 backtest windows. One construct-validity observation from the build: median abnormal intensity is
 mildly negative in every year, which is the pre-filing blackout period made visible in the data —
-insiders trade less immediately before a 10-K than in their own trailing baseline.
+insiders trade less immediately before a 10-K than in their own trailing baseline. This is the
+documented behaviour rather than an artifact: Bettis, Coles and Lemmon (2000) find that 78
+percent of firms operate explicit blackout policies and that insider trading within them falls
+to under a third of its level in permitted windows.
 
 The first question is the level question, and its answer is null. Adding the insider block to the
 structured model changes nothing in either window (paired ΔIC +0.000 at p = 0.897 over the
@@ -608,7 +614,10 @@ intensity is itself a transmission channel: Form 4s become public within two bus
 where insiders have traded heavily, their information is already flowing into prices and the
 disclosure text has less left to add. Disagreement, by contrast, marks unresolved dispersion
 among the best-informed parties — precisely the state in which narrative disclosure would still
-carry incremental information. Read this way, Stage E extends the Stage C absorption narrative
+carry incremental information, and the state Shalen (1993) models as generating additional
+volatility, dispersion of expectations being shown there to measure "both the additional
+volatility and the additional expected volume of trade associated with noisy information".
+Read this way, Stage E extends the Stage C absorption narrative
 from the time dimension (tone informative at the call anchor, absorbed by the filing anchor) to
 the cross-section: the text increment is earned on the firms whose information the market has not
 yet impounded, and spent on the firms whose insiders have already revealed theirs by trading.
