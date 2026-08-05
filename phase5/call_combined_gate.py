@@ -12,6 +12,7 @@ Run:  python phase5/call_combined_gate.py
 """
 
 import math
+import os
 import sys
 import json
 from pathlib import Path
@@ -27,7 +28,10 @@ from build_market_features import load_prices, market_index, features_for
 from build_call_features import json_records, _extract, _date_of, _ticker_of
 
 ANNUALIZE = math.sqrt(252)
-WINDOW = 30
+# post-call forward volatility window, in trading days. Default 30 = the published pilot, which
+# must reproduce (+0.039 IC over structured) before any other window is read. The spectrum starts
+# at 3: pandas .std() is ddof=1, so a 1-day window has no dispersion to measure.
+WINDOW = int(os.environ.get("RISK_CALL_WINDOW", "30"))
 TONE = ["call_uncertainty_dens", "call_negative_dens", "call_positive_dens",
         "call_risk_dens", "call_qa_uncertainty", "call_n_words"]
 
@@ -79,8 +83,8 @@ def main():
     df = pd.DataFrame(rows)
     scols = [c for c in df.columns if c not in (["logfwd", "q", "text"] + TONE)]
     has_text = df["text"].str.len() > 200
-    print(f"Usable calls: {len(df):,} | {df['q'].nunique()} quarters | structured cols: {len(scols)} | "
-          f"with text: {int(has_text.sum())}\n")
+    print(f"=== call window {WINDOW}d === usable calls: {len(df):,} | {df['q'].nunique()} quarters | "
+          f"structured cols: {len(scols)} | with text: {int(has_text.sum())}\n")
 
     from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.impute import SimpleImputer
@@ -133,12 +137,14 @@ def main():
     tone, nt = loqo(scols + TONE, "hgb")
     base_r, _ = loqo(scols, "ridge")
     text_r, ntx = loqo_text(scols)
-    print("Leave-one-quarter-out pooled IC (predicting post-call 30d vol):")
+    print(f"Leave-one-quarter-out pooled IC (predicting post-call {WINDOW}d vol):")
     print(f"  structured only         (HGB)   IC = {base:.3f}   (n={nb})")
     print(f"  structured + tone       (HGB)   IC = {tone:.3f}   (n={nt})   delta {tone - base:+.3f}")
     print(f"  structured only        (ridge)  IC = {base_r:.3f}")
     print(f"  structured + call-text (ridge)  IC = {text_r:.3f}   (n={ntx})   delta {text_r - base_r:+.3f}")
-    print(f"\nGATE: calls worth re-collecting if structured+tone or structured+call-text clearly beats "
+    print(f"\nSUMMARY_CALLANCHOR W={WINDOW:<3d} n={len(df):<4d} tone {tone - base:+.3f} | "
+          f"calltext {text_r - base_r:+.3f}")
+    print(f"GATE: calls worth re-collecting if structured+tone or structured+call-text clearly beats "
           f"structured-only. Small n ({len(df)}), single regime — read deltas as suggestive.")
 
 

@@ -250,10 +250,17 @@ cross-section (strict split; for `f4_disagreement`, whose within-year median is 
 
 | conditioner | window | mean(high−low ΔIC) | t | p | sign consistency |
 |---|---|---|---|---|---|
-| f4_abn_intensity | 7-yr | **−0.012** | −2.67 | 0.037 | negative 6/7 years |
+| f4_abn_intensity | 7-yr | −0.012 (*withdrawn*) | −2.67 | 0.037 | negative 6/7 years |
 | f4_abn_intensity | 12-yr | −0.006 | −1.28 | 0.227 | negative 7/12 |
 | f4_disagreement | 7-yr | **+0.029** | +2.04 | 0.088 | positive 6/7 years |
 | f4_disagreement | 12-yr | +0.016 | +1.51 | 0.158 | positive 8/12 |
+
+> **Update 2026-08-05 — `f4_abn_intensity` withdrawn.** The window sweep (spectrum section below)
+> re-ran this test at 3/5/7/10/20/60/90 days. The intensity effect is significant only in the 30d
+> cell and is null at all seven others (|ΔIC| ≤ 0.013, sign flipping positive at both ends), so it
+> is a lone-window result and is no longer reported as a finding. `f4_disagreement` survives, with
+> the 30d cell corroborated by its neighbour at 20d (+0.029). Everything below that rests on the
+> *contrast* between the two conditioners should be read as resting on disagreement alone.
 
 **Verdict.** The pre-registered direction (larger text increment in the high half) holds for
 **disagreement** and is reversed for **abnormal intensity** — and the two results are more
@@ -272,9 +279,160 @@ cross-section (which *firms* text helps on). Bounds on the claim, stated plainly
 window extends back to 2013 (the pattern is concentrated in 2018+), and the disagreement high-cell
 is small (52–89 firms/year). Stage E therefore closes as: **no level effect, plus suggestive,
 directionally consistent evidence that the text increment is state-dependent** — largest where
-informed parties disagree and smallest where they have already traded.
+informed parties disagree. *(As of 2026-08-05 the intensity arm of that contrast is withdrawn per
+the note above; the state-dependence claim now rests on disagreement alone, which the window sweep
+corroborates at 20d as well as 30d.)*
 
-## Horizon robustness — Prof Ma Q1/Q2 (2026-07-20, complete)
+## Volatility-window spectrum — Prof Ma Q1/Q2 + meeting items 1/3/4 (2026-08-05, complete)
+
+Supersedes the four-window result of 2026-07-20 below, whose numbers are reproduced here
+unchanged. At the 2026-08-04 meeting Prof Ma asked for the short end of the curve (1/3/5/7 days),
+for the whole spectrum from 3 to 90 days presented in comparison, for the same window angle
+applied to the earnings-call study, and for the Form 4 and calls extensions to be compared. All
+four are one sweep, because `eval_common.load_panel()` already selects labels through
+`RISK_HORIZON` and every downstream script reads labels through it.
+
+**Why the spectrum starts at 3, not 1.** The label is `std(daily log returns, ddof=1) × √252`,
+undefined for a single observation. Answering H=1 would mean swapping in a different estimator
+(|r|·√252) partway along the curve; one estimator across the whole spectrum is worth more than one
+extra point on it. At H=1 the target also stops being a dispersion measure and becomes a single
+signed-magnitude return — a different construct, not a shorter version of the same one.
+
+**Gates, all passed before any new number was read.** Label build self-certification at H=30:
+corr = 1.000000 on both columns, max |diff| 3.9e-6. Coverage monotone in horizon on every filing
+year (True). H=30 anchor reproduction in all three swept scripts: `run_horizon.py` 0.461 / 0.546 /
+0.561, ΔIC +0.016 p=0.098, val-2025 0.591 & 0.610; `form4_text_conditioning.py` +0.016 p=0.098,
+disagreement +0.030 p=0.089, abn_intensity −0.012 p=0.037; `call_combined_gate.py` at
+`RISK_CALL_WINDOW=30` tone +0.039. Construct checks: `fwd_vol_3d` vs `fwd_vol_90d` correlation
+0.517 (against 0.877 for 20 vs 90 — the short and long labels are genuinely different targets);
+fiscal-2020 median forward vol elevated at every window, peaking at 20d (0.850) and decaying to
+0.649 by 90d.
+
+### 1. The 10-K text increment across the spectrum (item 1)
+
+| window | lagged IC | struct [ridge] | struct+tfidf | text ΔIC | p | ΔIC / struct | val-2025 struct / s+tfidf |
+|---|---|---|---|---|---|---|---|
+| 3d | 0.193 | 0.330 | 0.351 | **+0.021** | **0.020** | +6.4% | 0.366 / 0.386 |
+| 5d | 0.289 | 0.417 | 0.441 | **+0.023** | **0.017** | +5.5% | 0.514 / 0.523 |
+| 7d | 0.299 | 0.444 | 0.470 | **+0.027** | **0.014** | +6.1% | 0.564 / 0.582 |
+| 10d | 0.314 | 0.462 | 0.482 | +0.020 | 0.076 | +4.3% | 0.578 / 0.596 |
+| 20d | 0.401 | 0.513 | 0.532 | +0.020 | 0.119 | +3.9% | 0.638 / 0.637 |
+| 30d | 0.461 | 0.546 | 0.561 | +0.016 | 0.098 | +2.9% | 0.591 / 0.610 |
+| 60d | 0.528 | 0.592 | 0.591 | −0.001 | 0.851 | −0.2% | 0.709 / 0.718 |
+| 90d | 0.534 | 0.607 | 0.602 | −0.005 | 0.477 | −0.8% | 0.739 / 0.751 |
+
+**Verdict — three findings.**
+1. **The model ranking is window-robust.** struct+tfidf ≥ structured ≥ lagged at every one of the
+   eight windows on the backtest; val-2025 agrees everywhere. Nothing overtakes the count model at
+   any window, so the headline representation result is not an artifact of the 30-day design
+   choice. This is the direct answer to Q1 and it is now measured over eight points, not four.
+2. **The text increment is single-peaked at 7 days** and decays monotonically to zero by 60,
+   +0.021 → +0.023 → **+0.027** → +0.020 → +0.020 → +0.016 → −0.001 → −0.005. In relative terms
+   the shape is sharper still (last-but-one column): text is worth 6% of the structured IC at the
+   short end and −1% at the long end. The direction is the *opposite* of the pre-run prior (QnA Q1
+   predicted text mattering more at long horizons). The mechanism is visible in the first column:
+   overall predictability rises with window length (lagged IC 0.193 → 0.534; longer realised-vol
+   windows are smoother and dominated by the persistent component), and the persistent component
+   is exactly what the structured HAR-style block already carries. Text contributes the transient
+   near-filing component, which washes out of the target as the window lengthens.
+3. **The increment clears p < 0.05 at 3, 5 and 7 days** — the first time anywhere in the study.
+   VII.4 open question 3 asked whether the increment crosses 0.05 as evaluation years accumulate;
+   the answer turns out to be that it crosses by *shortening the window* instead. Mechanically the
+   short windows are far less exposed to the 2020 regime break: IC_t rises from 5.9 at H=30 to
+   11.7 at H=3. **Stated with its bound**: eight windows, uncorrected, so p=0.014 at H=7 is not a
+   0.05-level claim on its own. The defensible claim is the monotone shape of the curve, which no
+   multiplicity argument touches, with the significance at the short end as corroboration.
+
+### 2. Earnings calls across the spectrum (item 3)
+
+**(a) Filing anchor** — the well-powered lane (6,859/7,367 filings matched, 7 backtest years).
+Each pair is same-head: `struct+calls [hgb]` vs `structured [hgb]`, `struct+tfidf+calls` vs
+`struct+tfidf [sparse]`.
+
+| window | struct+calls ΔIC | p | struct+tfidf+calls ΔIC | p |
+|---|---|---|---|---|
+| 3d | **+0.011** | 0.079 | −0.001 | 0.818 |
+| 5d | +0.006 | 0.100 | +0.000 | 0.661 |
+| 7d | −0.003 | 0.376 | −0.000 | 0.989 |
+| 10d | −0.001 | 0.781 | −0.000 | 0.892 |
+| 20d | −0.006 | **0.027** | −0.001 | 0.078 |
+| 30d | −0.005 | 0.289 | −0.001 | 0.372 |
+| 60d | +0.002 | 0.739 | −0.000 | 0.821 |
+| 90d | −0.003 | 0.350 | +0.000 | 0.741 |
+
+Stage C's filing-anchor null is **not** a 30-day artifact — it is a null at every window. The only
+non-null cells run in opposite directions (a weak positive flicker at 3–5 days, a small but
+significant *negative* at 20 days), which is what an uncorrected eight-window sweep of a true zero
+looks like. And on top of the full text model calls add nothing anywhere: |ΔIC| ≤ 0.001 at all
+eight windows. Where tone flickers at the short end, 10-K TF-IDF has already captured it — the two
+text modalities are substitutes, not complements.
+
+**(b) Call anchor** — the pilot lane, n=152 (n=139 at 60/90d, where the window runs past the data
+end), single 2025 regime, leave-one-quarter-out. Reported as a pilot; the shape is jagged, as
+expected at this sample size.
+
+| window | 3d | 5d | 7d | 10d | 20d | 30d | 60d | 90d |
+|---|---|---|---|---|---|---|---|---|
+| tone ΔIC over structured | −0.034 | +0.079 | +0.084 | **+0.142** | **+0.134** | +0.039 | −0.028 | −0.025 |
+| call-text ΔIC | +0.008 | +0.004 | +0.014 | +0.014 | +0.004 | +0.011 | +0.007 | +0.004 |
+
+Tone at the call anchor is a **hump peaking at 10–20 days**, positive across 5–30 and negative at
+3, 60 and 90. The published +0.039 at 30d turns out to sit on the decaying right shoulder of that
+hump rather than at its peak. Call-text embeddings add ~+0.01 at every window, i.e. nothing that
+depends on the window.
+
+### 3. Form 4 conditioning across the spectrum (item 4 input)
+
+`form4_text_conditioning.py` swept under `RISK_HORIZON` with no code change, so both extensions now
+sit on the same window axis. Unconditional column reproduces the item-1 table exactly (same test).
+
+| window | uncond ΔIC | p | `f4_disagreement` high−low | p | `f4_abn_intensity` high−low | p |
+|---|---|---|---|---|---|---|
+| 3d | +0.021 | 0.020 | **−0.038** | 0.075 | +0.013 | 0.445 |
+| 5d | +0.023 | 0.017 | −0.011 | 0.316 | −0.007 | 0.531 |
+| 7d | +0.027 | 0.014 | −0.002 | 0.900 | −0.009 | 0.442 |
+| 10d | +0.020 | 0.076 | +0.002 | 0.894 | −0.008 | 0.268 |
+| 20d | +0.020 | 0.119 | **+0.029** | 0.135 | −0.005 | 0.575 |
+| 30d | +0.016 | 0.098 | **+0.030** | 0.089 | **−0.012** | **0.037** |
+| 60d | −0.001 | 0.851 | +0.001 | 0.919 | −0.001 | 0.820 |
+| 90d | −0.005 | 0.477 | +0.002 | 0.801 | +0.002 | 0.574 |
+
+Two consequences, one supportive and one corrective.
+
+**`f4_disagreement` survives and acquires a shape.** The effect is a medium-window phenomenon,
++0.029 at 20d and +0.030 at 30d, decaying to zero by 60 and *reversing* to −0.038 at 3 days. Two
+adjacent windows agreeing is real corroboration that the 30d cell is not isolated. The sign flip at
+the short end is not noise-shaped either — it says the disagreement conditioning and the
+unconditional text increment peak at *different* windows, which is the substance of item 4 below.
+
+**`f4_abn_intensity` is downgraded and should no longer be reported as a finding.** It was the only
+p < 0.05 cell in the Stage E conditioning table (−0.012, p=0.037 at 30d). Across the other seven
+windows it is −0.001, −0.005, −0.008, −0.009, −0.007, +0.002, +0.013 — none significant, none
+larger than 0.013, and the sign flips positive at both ends. No neighbouring window supports it.
+A single significant cell in a family that is null at every adjacent window is the signature of a
+lone-window fluke, and the window sweep is exactly the test that distinguishes the two cases. The
+interpretation previously attached to it (abnormal intensity as an already-firing transmission
+channel, so text has less left to add) is therefore withdrawn as unsupported; it may still be true,
+but this study no longer has evidence for it. The Stage E verdict rests on `f4_disagreement` alone.
+
+*This is what the window sweep was worth beyond answering the question asked: it retired one
+result and corroborated another, at no additional data cost.*
+
+### Reproducibility caveat on the HGB lanes
+
+The `structured [hgb]` level reproduced as 0.511 in this run against 0.518 published on 2026-07-18,
+and `struct+calls [hgb]` correspondingly 0.507 vs 0.515 (so the H=30 call ΔIC is −0.005 p=0.289
+here vs −0.004 p=0.395 published). Investigated and not resolved: all input file mtimes predate 18
+July; `make_hgb` is unchanged since creation (`git log -L`); sklearn 1.8.0 was installed 2026-05-19,
+before the July run; HGB is deterministic within a process (identical predictions, `n_iter_`=299 on
+both fits); and re-running `run_fusion.py`'s own lane directly also gives 0.511. **Only HGB lanes
+moved — every ridge and TF-IDF lane reproduced exactly**, and the paired ΔIC, which is what the
+lanes exist to produce, is essentially unchanged (−0.005 vs −0.004). No conclusion depends on the
+level. Recorded here rather than silently absorbed.
+
+---
+
+## Horizon robustness — Prof Ma Q1/Q2 (2026-07-20, superseded by the spectrum above)
 
 **Question.** Is the count-model result (and the text increment) consistent across label
 horizons, or specific to the 30-trading-day label? Labels regenerated at 20/60/90 trading days
@@ -314,8 +472,148 @@ val-2025 0.591 & 0.610) before any new horizon was read.
    fiscal-2020 median fwd vol decays with horizon (0.85 → 0.65, mean reversion); cross-horizon
    label correlations 0.88–0.98.
 
+## Form 4 vs earnings calls — the matched comparison (item 4, 2026-08-05)
+
+Prof Ma asked for the two extensions to be compared on results *and* interpretation. The window
+sweep makes the results half quantitative rather than rhetorical, because both extensions are now
+measured on the same axis.
+
+| axis | earnings calls (Stage C) | Form 4 (Stage E) |
+|---|---|---|
+| what it proxies | management's own read of the quarter, at the moment they voice it | information asymmetry among the best-informed parties |
+| anchor | signal at the call date, null at the filing date | filing date only |
+| coverage | 6,859/7,367 filings (93%), 2006–2025 | 7,367/7,367 (100%), 2006–2026 |
+| backtestable windows | 7-yr only (coverage) | both 7-yr and 12-yr |
+| level effect | null at the filing anchor, at all 8 windows | null on all four arms, both windows |
+| conditional / anchored effect | +0.039 IC at the call anchor at 30d, n=152 | +0.030 disagreement conditioning at 30d |
+| **window signature** | **hump, peak 10–20d** (+0.142 / +0.134) | **rise to 20–30d** (+0.029 / +0.030), sign-flips to −0.038 at 3d |
+| relation to the 10-K text | substitute — abs(ΔIC) ≤ 0.001 on top of TF-IDF at every window | complement — conditions *where* the TF-IDF increment is earned |
+| status | informative at its own anchor, absorbed by the filing anchor | null in level, state-dependent in the cross-section |
+
+**The result the comparison produces, which neither study produced alone.** The three effects have
+*different* window signatures, and they do not line up:
+
+| effect | peak window | value at 3d |
+|---|---|---|
+| 10-K text increment (unconditional) | **7d** (+0.027) | +0.021 — near its maximum |
+| insider-disagreement conditioning | **20–30d** (+0.030) | −0.038 — sign reversed |
+| call tone at the call anchor | **10–20d** (+0.142) | −0.034 — sign reversed |
+
+The 10-K's own text carries **days**. Both event families carry **weeks**. That is a cleaner split
+than the pre-sweep picture suggested, and it refines the absorption reading rather than repeating
+it: the filing text prices the transient, immediately-post-filing uncertainty and is spent within
+a fortnight, whereas what insiders and management convey shows up over a horizon long enough for
+the market to work through it — and is invisible, or inverted, in the first three days.
+
+**Interpretation, stated as interpretation.** Both extensions test the same hypothesis — that the
+10-K text increment exists only where and when the market has not already impounded the
+information — along different dimensions. Calls test the **time** dimension: tone is informative at
+the call, and null one to three months later at the filing, because the structured block's
+realised-volatility windows measured at filing span exactly the post-call period the tone
+predicted. Form 4 tests the **cross-section**: the increment is largest on firms whose insiders are
+split, i.e. whose information is demonstrably unresolved. The window spectrum adds a third
+dimension, **the target's own timescale**, and it is what makes these a matched pair rather than
+two appendices. It also gives the two studies a shared falsifiable prediction: if the mechanism
+were simply "more text signal is better", all three curves would peak together. They do not.
+
+**Where the comparison is asymmetric, and should be reported as such.** The calls result at the
+call anchor rests on n=152 in a single 2025 regime and its window curve is correspondingly jagged;
+the Form 4 result rests on 7 backtest years at 100% coverage. The two are not equally credentialled
+and the write-up should not present them as such — the calls *filing-anchor* null is the
+well-powered calls finding (6,859 filings × 7 years × 8 windows, null throughout), and it is that
+null, not the call-anchored hump, that carries weight against the Form 4 conditioning result.
+
+## Round 8 — bounded generative-LLM pilot (2026-08-05, job 3584249, MEASURED NULL)
+
+**Question (Prof Ma, 2026-08-04).** Give the event dataset to an LLM, have it interpret and score,
+compare with the manual model — does it improve the results? Run as a bounded pilot on
+`exp/llm-event-scoring` with a stopping rule fixed before the scores were looked at.
+
+**Design.** Form 4 pre-filing windows (the same (filing−180d, filing−3d] window as the eight
+`f4_*` features) rendered as a compact transaction table and scored by Qwen2.5-7B-Instruct on three
+0–100 dimensions (volatility_risk, information_asymmetry, confidence), K=5 samples at temperature
+0.7. Scope is **2024+2025 filings only (865 prompts, 836 joined to the panel)** — both years
+post-date the model's training cutoff, so look-ahead is controlled by construction rather than by
+argument. Prompts are **identifier-stripped** (no ticker, no company or insider names, no absolute
+dates — day offsets relative to the filing; insiders pseudonymised I1, I2, …), with a per-row
+anonymisation assertion; an **identified control lane** was scored separately as the contamination
+probe. Evaluation is 5-fold CV within year, identical folds and one head
+(`E.make_imputed_ridge`) across all three conditions — the same admissible design
+`call_filing_gate.py` uses, and for the same reason: the LLM score exists only on the evaluation
+rows, so no train<year split could learn it. 2×`h200_1g.18gb`, 1h40m wall.
+
+**1) Score stability — the measurement, and the most durable output.** Parse failures **0/4,325
+samples (0.00%)**, so nothing here is a parsing artifact.
+
+| dimension | across-filing sd | median within-filing sd (5 re-runs) | ratio |
+|---|---|---|---|
+| volatility_risk | 12.47 | 7.36 | 0.59 |
+| information_asymmetry | 11.08 | 9.75 | 0.88 |
+| confidence | 7.91 | 7.58 | **0.96** |
+
+Re-running the *identical* prompt on the *identical* filing moves the score 59–96% as much as
+swapping in a different company. On the confidence dimension the elicited score is very nearly
+pure noise. This is study_extended.md VII.5's stability claim measured on this study's own data
+instead of borrowed from Sclar et al. (2024) and Ouyang et al. (2024) — and it is measured under
+conditions favourable to the model (fixed prompt, fixed model version, fixed seed, one release).
+Averaging the 5 draws recovers almost nothing: single draw IC 0.733, K-averaged 0.736, gain +0.003.
+
+**2) Does the LLM score beat the hand-crafted features?** No — and neither beats the baseline.
+
+| condition | IC | R²_log |
+|---|---|---|
+| structured [ridge] | 0.736 | 0.532 |
+| structured + f4_manual (the 8 `f4_*` features) | 0.730 | 0.527 |
+| structured + f4_llm (3 LLM scores) | 0.736 | 0.532 |
+
+| paired comparison | ΔIC | 95% CI | DM p |
+|---|---|---|---|
+| f4_manual vs structured | −0.006 | [−0.014, +0.000] | 0.167 |
+| f4_llm vs structured | −0.000 | [−0.005, +0.004] | 0.920 |
+| **f4_llm vs f4_manual** | **+0.006** | **[−0.000, +0.013]** | 0.118 |
+
+**STOPPING RULE: ΔIC(llm vs manual) = +0.006, CI half-width 0.007 → MEASURED NULL.** The pilot
+closes here per its pre-registered rule: no expansion to the full panel, no earnings-call lane, no
+second model family. (Note the IC level of 0.736 is not comparable to the 0.546 backtest figure —
+CV-within-year trains on contemporaneous filings and is a much easier design. It is the *paired
+differences* that are the output.)
+
+**3) Contamination probe (anonymised vs identified prompts).** identified IC 0.737, anonymised
+0.736, premium **+0.001, 95% CI [−0.004, +0.006]**, n=836. Framed precisely: on a post-cutoff slice
+there *should* be no look-ahead to find, so this is **a placebo check that passed**, not a general
+measurement of contamination. It confirms the scope decision worked; it does not license
+generalising to the 2018–2024 backtest years, where the whole objection lives.
+
+**Verdict.** Feature engineering was **not** the bottleneck. The eight hand-crafted features and the
+generative model's reading of the same raw record are statistically indistinguishable, and both are
+indistinguishable from omitting insider information entirely — which is exactly what Stage E's level
+test already found on 7 and 12 backtest years. The binding constraint is the information content of
+the Form 4 record relative to a structured block that already carries realised volatility, drawdown
+and liquidity. The pilot's value is therefore (a) the instability measurement above, which
+strengthens VII.5's position with a number rather than a citation, and (b) a defensible answer to
+the question actually asked. It is written up as the bounded answer to QnA Q5 and is not expanded.
+
 ## Run log
 
+- 2026-08-05 — job 3584156 (Teaching, 2 CPU, 6h58m): **volatility-window spectrum complete**
+  (meeting items 1/3/4). Label build at 3/5/7/10/20/60/90 (certification corr 1.000000 both
+  columns, coverage monotone in horizon on every filing year), then the H=30 anchor gate across
+  `run_horizon.py` + `form4_text_conditioning.py`, then all eight windows through `run_horizon.py`
+  (now carrying two added call lanes), `form4_text_conditioning.py`, and `call_combined_gate.py`
+  under `RISK_CALL_WINDOW`. Findings in the spectrum section above. Two results changed status:
+  the text increment clears p<0.05 at 3/5/7 days (first time in the study), and
+  `f4_abn_intensity` is withdrawn as a lone-window fluke. HGB level reproducibility caveat
+  recorded above.
+- 2026-08-05 — job 3584249 (`h200_1g.18gb` ×2, 1h40m): **Round 8 generative-LLM pilot** on branch
+  `exp/llm-event-scoring`. 865 Form 4 windows × 5 samples × 2 lanes (anonymised + identified
+  control) through Qwen2.5-7B-Instruct, 0 parse failures out of 8,650 samples, then
+  `llm_vs_manual.py`. MEASURED NULL by its own stopping rule; the within-filing score spread is
+  the keeper. (Three earlier submits failed on scheduling and sizing: 3584212/3584218 pended
+  because a 48h request cannot backfill ahead of a higher-priority hold on `saxa`; 3584220 OOMed
+  inside `from_pretrained` because a `1g.18gb` slice exposes 16.00 GiB, not 18, against a 15.2 GiB
+  bf16 model plus a transient fp32 upcast of the 152k×3584 embedding. Fixed with 2 slices, a 2h
+  wall request, and `set -e` so a scoring failure can no longer fall through to the evaluation
+  step and bury the traceback.)
 - 2026-07-20 — job 3559526 (Teaching, 2 CPU, 34m): horizon experiment complete — label build
   (certification corr 1.000000 both columns), H=30 anchor reproduction exact, then H=20/60/90.
   Findings above; QnA_from_Prof_Ma.md Q1/Q2 updated to measured answers. (First submit 3559518

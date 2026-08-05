@@ -1,10 +1,14 @@
 """
-#17 Horizon robustness — volatility labels at 20/60/90 trading days.
+#17 Horizon robustness — volatility labels across the 3-to-90 trading-day window spectrum.
 
-Same definition as the study's 30-day labels (compute_volatility_labels.py), at three more
+Same definition as the study's 30-day labels (compute_volatility_labels.py), at seven more
 horizons: vol = std(daily log-returns, ddof=1) over the H trading days strictly before / strictly
 after the filing date, annualised by sqrt(252). Prices come from the same two sources the
 structured features use (build_market_features.load_prices: FINSABER 2000-2024 + CRSP 2025).
+
+The spectrum starts at H=3, not H=1: std(ddof=1) of a single return is undefined, and answering
+the 1-day case would mean swapping in a different estimator (e.g. |r|*sqrt(252)) partway along the
+curve. One estimator across the whole spectrum is worth more than one extra point on it.
 
 The 30-day labels in feature_table_fixed.parquet are NEVER touched — they are the study's frozen
 anchor. This script instead recomputes H=30 as a VALIDATION lane and reports agreement with the
@@ -12,7 +16,7 @@ stored labels (certifying this reimplementation before any 20/60/90 number is tr
 saves only the new horizons.
 
 Output: datasets/volatility_labels_horizons.parquet, keyed (ticker, filing_date), columns
-lagged_vol_{20,60,90}d / fwd_vol_{20,60,90}d.
+lagged_vol_{3,5,7,10,20,60,90}d / fwd_vol_{3,5,7,10,20,60,90}d.
 Run:  python dataset_config/compute_horizon_labels.py
 """
 
@@ -30,7 +34,7 @@ _FT_FIXED = DATA / "feature_table_fixed.parquet"
 FEATURE_TABLE = _FT_FIXED if _FT_FIXED.exists() else DATA / "feature_table.parquet"
 OUT_PATH = DATA / "volatility_labels_horizons.parquet"
 
-HORIZONS = [20, 60, 90]
+HORIZONS = [3, 5, 7, 10, 20, 60, 90]
 ANNUALIZE = math.sqrt(252)
 TOL = 1e-5  # stored 30d labels are rounded to 6dp
 STALE_DAYS = np.timedelta64(10, "D")  # window must touch the filing date within this margin
@@ -96,6 +100,12 @@ def main():
     cov = pd.DataFrame({f"h{h}": res[f"fwd_vol_{h}d"].notna().groupby(yr).mean()
                         for h in HORIZONS})
     print(cov.round(3).to_string())
+
+    # a short window is strictly easier to fill than a long one, so coverage must be
+    # non-increasing in H on every year — a violation means the window search is miswired
+    bad = cov[(cov.diff(axis=1).drop(columns=cov.columns[0]) > 1e-9).any(axis=1)]
+    print(f"Coverage monotone in horizon on every filing year: {bad.empty}"
+          + ("" if bad.empty else f"  <-- VIOLATED on {list(bad.index)}"))
 
     print("\nSanity: cross-horizon correlation of forward labels (should be high but < 1):")
     m = res[[f"fwd_vol_{h}d" for h in HORIZONS]].copy()

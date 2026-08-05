@@ -1,7 +1,8 @@
 # Predicting Forward Volatility from 10-K Risk Disclosures: The Extended Study
 
 **Author:** Sarthak Vishnu (s2880814) · **Supervisor:** Prof Tiejun Ma · University of Edinburgh
-**Date:** 2026-07-06
+**Date:** 2026-07-06 (last revised 2026-08-05: volatility-window spectrum, the calls-versus-insiders
+comparison, and the bounded generative-LLM pilot)
 **Status:** Report-draft narrative. This document supersedes `study.md` as the working account of the
 study. All citations are grounded in `Literature_agent_study_extended.md`, `Literature_agent.md`,
 and `Literature_agent_phase3.md`. All numbers trace to `phase5/STRESS_TEST_RESULTS.md` and the
@@ -16,7 +17,10 @@ the primary results under that protocol. Part III describes the robustness exten
 deliberate methodological adaptation beyond the original design, and the final verdict it
 produced. Part IV and Part V cover the disclosure-change branch and the earnings-call analysis.
 Part VI reports the insider-trading extension, which asks when — for which firms — the text
-increment is earned. Part VII states the conclusions and contributions.
+increment is earned, and closes by setting the two event-data extensions against each other on the
+common horizon axis introduced in Part III.4. Part VII states the conclusions and contributions,
+and records in VII.5 why the generative-language-model route is scoped out, including the bounded
+pilot run to test that judgement rather than assert it.
 
 ---
 
@@ -424,43 +428,75 @@ which bounds how much the handicap can be hiding.
 Every result so far is stated at one horizon: realised volatility over the 30 trading days after
 the filing, the monthly convention of the realised-volatility literature. That horizon is a
 design choice, and the last robustness question is whether the study's conclusions are specific
-to it. Labels were therefore regenerated at 20, 60 and 90 trading days under the identical
-definition (standard deviation of daily log returns over the window strictly after — and, for the
-lagged predictor, strictly before — the filing date, annualised), from the same price sources as
-the structured features. The construction was validated by requiring it to reproduce the study's
-30-day labels exactly before any new horizon was read (agreement to rounding precision on every
-comparable filing), and windows are required to lie adjacent to the filing date, so a firm whose
-price history has ended receives no label rather than a stale one. The fair pair of Part III.1
-was then rerun per horizon — persistence, structured [ridge], struct+tfidf [sparse], each with
-the horizon-matched lagged volatility — on the same 2018–2024 expanding-window backtest and the
-2025 validation year.
+to it. Labels were therefore regenerated across a spectrum of seven further horizons — 3, 5, 7,
+10, 20, 60 and 90 trading days — under the identical definition (standard deviation of daily log
+returns over the window strictly after — and, for the lagged predictor, strictly before — the
+filing date, annualised), from the same price sources as the structured features. The
+construction was validated by requiring it to reproduce the study's 30-day labels exactly before
+any new horizon was read (agreement to rounding precision on every comparable filing), and
+windows are required to lie adjacent to the filing date, so a firm whose price history has ended
+receives no label rather than a stale one. The fair pair of Part III.1 was then rerun per horizon
+— persistence, structured [ridge], struct+tfidf [sparse], each with the horizon-matched lagged
+volatility — on the same 2018–2024 expanding-window backtest and the 2025 validation year.
+
+The spectrum begins at three days rather than one for a reason of construct rather than of
+convenience. The label is a sample standard deviation, which is undefined for a single
+observation; answering the one-day case would mean substituting a different estimator, the
+absolute return scaled by the annualisation factor, partway along the curve. One estimator across
+the whole spectrum is worth more than one extra point on it, and at a one-day horizon the target
+would in any case cease to be a dispersion measure and become a single signed magnitude — a
+different construct rather than a shorter version of the same one.
 
 | horizon | lagged IC | structured [ridge] | struct+tfidf [sparse] | text ΔIC (paired) | p | val-2025 struct / struct+tfidf |
 |---|---|---|---|---|---|---|
+| 3 days | 0.193 | 0.330 | 0.351 | +0.021 | 0.020 | 0.366 / 0.386 |
+| 5 days | 0.289 | 0.417 | 0.441 | +0.023 | 0.017 | 0.514 / 0.523 |
+| 7 days | 0.299 | 0.444 | 0.470 | +0.027 | 0.014 | 0.564 / 0.582 |
+| 10 days | 0.314 | 0.462 | 0.482 | +0.020 | 0.076 | 0.578 / 0.596 |
 | 20 days | 0.401 | 0.513 | 0.532 | +0.020 | 0.119 | 0.638 / 0.637 |
 | 30 days | 0.461 | 0.546 | 0.561 | +0.016 | 0.098 | 0.591 / 0.610 |
 | 60 days | 0.528 | 0.592 | 0.591 | −0.001 | 0.851 | 0.709 / 0.718 |
 | 90 days | 0.534 | 0.607 | 0.602 | −0.005 | 0.477 | 0.739 / 0.751 |
 
-Two findings. First, the model ranking is horizon-robust: struct+tfidf at or above structured,
-structured above persistence, at every horizon on the backtest, with the validation year
-agreeing throughout. No conclusion of Parts II and III is an artifact of the 30-day choice.
-Second, the text increment itself has a term structure: +0.020 at 20 days, +0.016 at 30, and
-zero at 60 and 90. The direction is the opposite of the naive expectation that a slow-moving
-annual disclosure should matter more at longer horizons. The resolution is visible in the first
-column: overall predictability rises with horizon (persistence alone climbs from 0.401 to
-0.534), because longer realised-volatility windows are smoother and increasingly dominated by
-the persistent component of volatility — and that component is precisely what the structured
-block's multi-horizon trailing measures already carry. What the text contributes is the
-transient, near-filing component of uncertainty, which washes out of the target as the horizon
-lengthens. Read alongside Parts V and VI, this completes the same absorption logic in a third
-dimension: earnings-call tone showed *when* in time a text signal stops adding value, the
-insider-conditioning analysis showed *for which firms* it adds most, and the term structure
-shows *at which horizon* it exists at all. The headline increment is thus a property of the
-monthly horizon at which the study states it — present at 20 to 30 days, demonstrably absent by
-60. As everywhere in this study, the qualification is stated plainly: no single horizon's ΔIC is
-individually significant, and the evidence is the monotone pattern across four horizons, not any
-one cell.
+Three findings. First, the model ranking is horizon-robust: struct+tfidf at or above structured,
+structured above persistence, at every one of the eight horizons on the backtest, with the
+validation year agreeing throughout. No conclusion of Parts II and III is an artifact of the
+30-day choice.
+
+Second, the text increment itself has a term structure, and with the short end filled in it
+resolves into a single-peaked curve rather than a decline: it rises from +0.021 at three days to
+a maximum of +0.027 at seven, then falls monotonically to +0.016 at thirty and to zero at sixty
+and ninety. Measured relative to the structured baseline the shape is sharper still, text being
+worth six percent of the structured information coefficient at the short end and minus one
+percent at the long end. The direction is the opposite of the naive expectation that a
+slow-moving annual disclosure should matter more at longer horizons. The resolution is visible in
+the first column: overall predictability rises steeply with horizon (persistence alone climbs
+from 0.193 to 0.534), because longer realised-volatility windows are smoother and increasingly
+dominated by the persistent component of volatility — and that component is precisely what the
+structured block's multi-horizon trailing measures already carry. What the text contributes is
+the transient, near-filing component of uncertainty, which washes out of the target as the
+horizon lengthens. The four-point version of this table supported that reading by inference; the
+eight-point version exhibits it, with the peak located rather than assumed.
+
+Third, and unexpectedly, the increment attains conventional significance at the short end: p =
+0.020, 0.017 and 0.014 at three, five and seven days. Part VII.4 poses as an open question
+whether the increment crosses the five percent threshold as evaluation years accumulate; the
+answer turns out to be that it crosses by shortening the horizon instead. The mechanism is
+visible in the per-year dispersion — the information-coefficient t-statistic of the full model
+rises from 5.9 at thirty days to 11.7 at three — because short realised-volatility windows are
+far less exposed to the 2020 regime break that dominates the thirty-day panel's year-to-year
+variance. The qualification is stated plainly and is not a formality: eight horizons were swept
+without a multiplicity adjustment, so p = 0.014 at seven days is not a five-percent-level claim
+standing alone. The evidence this table offers is the shape of the curve, which no multiplicity
+argument touches, with the short-end significance as corroboration rather than as the headline.
+
+Read alongside Parts V and VI, this completes the same absorption logic in a third dimension:
+earnings-call tone showed *when* in time a text signal stops adding value, the
+insider-conditioning analysis showed *for which firms* it adds most, and the term structure shows
+*at which horizon* it exists at all. The headline increment is thus a property of the monthly
+horizon at which the study states it — near its maximum from three to twenty days, still present
+at thirty, and demonstrably absent by sixty. The comparison at the close of Part VI takes this
+further, because the three effects turn out not to peak at the same horizon.
 
 ---
 
@@ -538,8 +574,35 @@ where the historical coverage makes calls a fully backtestable family, structure
 matches structured alone (0.515 against 0.518, paired p = 0.395) and the full model with tone
 matches it without (0.561 against 0.561, p = 0.436).
 
-Both results are correct; they measure different horizons. A plausible reading, offered as an
-interpretation rather than an established mechanism, is that management tone carries genuine
+A natural objection to the second result is that its null might be an artifact of the thirty-day
+label, the tone signal being real but living at a horizon the study does not measure. The horizon
+machinery of Part III.4 answers this at no additional data cost, and it answers it decisively at
+the filing anchor. Across the full spectrum from three to ninety days, adding tone to the
+structured model produces increments of +0.011, +0.006, −0.003, −0.001, −0.006, −0.005, +0.002
+and −0.003, and adding it to the full model with 10-K text produces increments whose absolute
+value never exceeds 0.001 at any horizon. The only cells that are not null run in opposite
+directions — a weak positive at three to five days and a small but nominally significant negative
+at twenty — which is what an uncorrected eight-horizon sweep of a true zero is expected to look
+like. Stage C's filing-level null is therefore a null at every horizon, not a property of the one
+at which it was first stated. The short-horizon flicker is worth one further observation: it
+appears over the structured model alone and vanishes over the full model, so where tone carries
+anything at the filing anchor, the 10-K's own text has already captured it. As second text
+modalities go, calls are a substitute for the filing text rather than a complement to it.
+
+At the call anchor the same sweep can be run, and is reported as the pilot it is, on 152 filings
+in a single 2025 regime. Tone's increment over the structured model traces a hump across the
+spectrum — negative at three days, then +0.079, +0.084, +0.142 and +0.134 at five, seven, ten and
+twenty, +0.039 at thirty, and negative again at sixty and ninety. Two things follow, both modest.
+The headline +0.039 at thirty days sits on the decaying right shoulder of that hump rather than at
+its peak, so the call-anchored effect, such as it is, is a two-to-four-week phenomenon rather than
+a monthly one. And the sign reversal at three days is the first indication that the call signal
+and the 10-K text signal do not live at the same horizon at all — a point Part VI's comparison
+returns to with a second, better-powered instance of it. At this sample size the curve is jagged
+and no individual cell should be read; the shape is the most that can be claimed.
+
+Both filing-anchor and call-anchor results are correct; they measure different horizons. A
+plausible reading, offered as an interpretation rather than an established mechanism, is that
+management tone carries genuine
 volatility information at the call date, but that by the filing date, one to three months later,
 the structured block has already absorbed it: the realised-volatility windows measured at filing
 span exactly the post-call period the tone predicted. Stated as a finding, Stage C identifies the
@@ -599,36 +662,90 @@ splitting each test year at its median is knowable at prediction time, so the an
 leakage-free by construction. Within each half the paired per-year ΔIC is computed on the same
 firms, and the high-minus-low difference is tested across years.
 
-The two conditioners answer in opposite directions, and the pattern is more informative than
-either alone. Conditioned on abnormal trading *intensity*, the hypothesis is reversed: the text
-increment is larger in the low-intensity half (high-minus-low ΔIC of −0.012, t = −2.67,
-p = 0.037 over the seven-year window, negative in six of seven years; −0.006 at p = 0.227 over
-twelve years). Conditioned on insider *disagreement*, the hypothesis holds: the increment is
-larger where trading insiders are split (+0.029, t = +2.04, p = 0.088 over seven years, positive
-in six of seven; +0.016 at p = 0.158 over twelve). In the disagreement half the per-year text
-increment reaches three to four times its unconditional size (+0.083 in 2021, +0.132 in 2023).
+The two conditioners initially appeared to answer in opposite directions. Conditioned on insider
+*disagreement*, the hypothesis holds: the increment is larger where trading insiders are split
+(high-minus-low ΔIC of +0.029, t = +2.04, p = 0.088 over seven years, positive in six of seven;
++0.016 at p = 0.158 over twelve). In the disagreement half the per-year text increment reaches
+three to four times its unconditional size (+0.083 in 2021, +0.132 in 2023). Conditioned on
+abnormal trading *intensity*, the hypothesis appeared to be reversed, the increment being larger
+in the low-intensity half (−0.012, t = −2.67, p = 0.037 over seven years, negative in six of
+seven; −0.006 at p = 0.227 over twelve).
 
-A plausible reading, offered as an interpretation rather than an established mechanism, is that
-the two conditioners proxy different stages of the information process. Abnormal trading
-intensity is itself a transmission channel: Form 4s become public within two business days, so
-where insiders have traded heavily, their information is already flowing into prices and the
-disclosure text has less left to add. Disagreement, by contrast, marks unresolved dispersion
-among the best-informed parties — precisely the state in which narrative disclosure would still
-carry incremental information, and the state Shalen (1993) models as generating additional
-volatility, dispersion of expectations being shown there to measure "both the additional
-volatility and the additional expected volume of trade associated with noisy information".
-Read this way, Stage E extends the Stage C absorption narrative
-from the time dimension (tone informative at the call anchor, absorbed by the filing anchor) to
-the cross-section: the text increment is earned on the firms whose information the market has not
-yet impounded, and spent on the firms whose insiders have already revealed theirs by trading.
+**That second result does not survive, and is withdrawn.** Re-running the conditioning test at the
+seven further horizons of Part III.4 places the intensity effect at −0.001, −0.005, −0.008,
+−0.009, −0.007, +0.002 and +0.013 across three to ninety days: no cell significant, none larger in
+magnitude than 0.013, and the sign turning positive at both ends of the spectrum. The nominally
+significant thirty-day cell has no support from any adjacent horizon, which is the signature of a
+single-cell finding in a family that is otherwise null rather than of an effect that happens to be
+measured most cleanly at one horizon. It is reported here as withdrawn rather than quietly
+dropped, because the discipline that retires it is the same one that credentials its counterpart:
+insider disagreement is corroborated at twenty days (+0.029) as well as at thirty (+0.030), and
+that agreement between neighbouring horizons is the evidence that the thirty-day cell is not
+isolated. The horizon sweep was run to answer a question about robustness; what it also did was
+distinguish one of the two conditioning results from the other.
 
-The bounds of the claim are stated plainly. Two conditioners were tested over two windows with no
-multiplicity adjustment, the p-values range from 0.037 to 0.227, both effects attenuate as the
-backtest extends to 2013 (the pattern is concentrated from 2018 onward), and the disagreement
-high-cell is small (52 to 89 firms per year). Stage E therefore closes as a null level effect
-together with suggestive, directionally consistent evidence that the text increment is
-state-dependent — largest where informed parties disagree, smallest where they have already
-traded.
+A plausible reading of what remains, offered as an interpretation rather than an established
+mechanism, is that disagreement marks unresolved dispersion among the best-informed parties —
+precisely the state in which narrative disclosure would still carry incremental information, and
+the state Shalen (1993) models as generating additional volatility, dispersion of expectations
+being shown there to measure "both the additional volatility and the additional expected volume of
+trade associated with noisy information". Read this way, Stage E extends the Stage C absorption
+narrative from the time dimension (tone informative at the call anchor, absorbed by the filing
+anchor) to the cross-section: the text increment is earned on the firms whose information the
+market has not yet impounded. The complementary proposition that had been attached to the
+intensity conditioner — that heavy insider trading is itself a transmission channel, Form 4s
+becoming public within two business days, so that where insiders have traded the disclosure text
+has less left to add — is a coherent mechanism and may well be true, but this study no longer
+has evidence for it and does not assert it.
+
+The bounds of the surviving claim are stated plainly. Two conditioners were tested over two
+windows and eight horizons with no multiplicity adjustment; the disagreement effect attenuates as
+the backtest extends to 2013 (the pattern is concentrated from 2018 onward), its strongest
+p-value is 0.088, and the disagreement high-cell is small (52 to 89 firms per year). Stage E
+therefore closes as a null level effect together with suggestive, horizon-corroborated evidence
+that the text increment is state-dependent — largest where informed parties disagree.
+
+### Comparing the two extensions
+
+The two extensions were built to test one hypothesis along two different dimensions, and it is
+worth setting them against each other explicitly rather than leaving them as consecutive
+appendices. Earnings calls test the **time** dimension: whether a text signal that is informative
+when spoken survives to the filing date one to three months later. Form 4 tests the
+**cross-section**: which firms still hold unimpounded information at the filing date. The horizon
+spectrum of Part III.4 supplies a third dimension, the timescale of the target itself, and it is
+what turns the pair into a comparison rather than a juxtaposition, because both extensions can be
+measured on it.
+
+| | earnings calls (Part V) | insider trading (Part VI) |
+|---|---|---|
+| coverage | 6,859 of 7,367 filings, 2006–2025 | 7,367 of 7,367, 2006–2026 |
+| backtestable windows | seven-year only | seven- and twelve-year |
+| level effect | null at the filing anchor, at all eight horizons | null on all four arms, both windows |
+| conditional or anchored effect | +0.039 IC at the call anchor, n = 152 | +0.030 disagreement conditioning |
+| relation to the 10-K text | substitute: nothing added on top of TF-IDF at any horizon | complement: conditions where the TF-IDF increment is earned |
+
+The comparison produces one result that neither extension produced alone. The three effects do
+not peak at the same horizon. The unconditional 10-K text increment peaks at seven days and is
+near its maximum at three. Insider-disagreement conditioning peaks at twenty to thirty days and
+reverses sign, to −0.038, at three. Call tone at the call anchor peaks at ten to twenty days and
+likewise reverses at three. The filing's own text, in other words, carries **days**, while both
+event families carry **weeks**, and both are invisible or inverted over the first three trading
+days after the filing.
+
+This refines the absorption reading rather than restating it. The 10-K prices the transient
+uncertainty immediately following its own publication, and that contribution is spent within a
+fortnight. What insiders and management convey shows up over a horizon long enough for the market
+to work through it, and does not register at all on the timescale where the disclosure text is at
+its strongest. The three curves also give the shared account a falsifiable prediction that it
+passes: were the mechanism simply that more text signal is better, all three would peak together.
+They do not.
+
+One asymmetry should be stated rather than smoothed over, because the two extensions are not
+equally credentialled. The Form 4 result rests on seven backtest years at complete coverage; the
+call-anchored result rests on 152 filings in a single 2025 regime, and its horizon curve is
+correspondingly jagged. The well-powered calls finding is the *filing-anchor null* — 6,859 filings
+across seven years and eight horizons, null throughout — and it is that null, not the
+call-anchored hump, that stands beside the Form 4 conditioning result as evidence.
 
 ---
 
@@ -668,15 +785,27 @@ conditions extending to the training provenance of the encoders themselves.
    not yet been impounded into cheaper, fresher predictors.
 6. **Suggestive evidence that the text increment is state-dependent.** Conditioning the text
    increment on pre-filing insider activity (Part VI) indicates it concentrates in firms whose
-   insiders disagree and thins in firms whose insiders have recently traded heavily — the
-   cross-sectional counterpart of the absorption reading, subject to the bounds stated in
-   Part VI.
-7. **A term structure for the text increment.** Relabelling the task at 20, 60 and 90 trading
-   days (Part III.4) shows the model ranking is horizon-robust while the text increment itself
-   is a short-horizon phenomenon: +0.020 IC at 20 days, +0.016 at 30, zero at 60 and 90. The
-   study's headline is thereby scoped by measurement rather than assumption — text adds
-   volatility information at the monthly horizon, where the transient component it captures has
-   not yet washed out of the target.
+   insiders disagree — the cross-sectional counterpart of the absorption reading, subject to the
+   bounds stated in Part VI, and corroborated across two adjacent horizons.
+7. **A term structure for the text increment, and a horizon axis that discriminates.**
+   Relabelling the task across eight horizons from 3 to 90 trading days (Part III.4) shows the
+   model ranking is horizon-robust while the text increment itself is single-peaked at seven days
+   and gone by sixty, reaching conventional significance (p = 0.014 to 0.020) at the short end
+   where the 2020 regime break contributes least variance. The study's headline is thereby scoped
+   by measurement rather than assumption. The same axis turns out to discriminate among the
+   study's own findings: it retired one previously significant conditioning result as a
+   lone-horizon artifact, corroborated the other, and showed the three surviving effects to peak
+   at *different* horizons — the filing text at seven days, insider disagreement and call tone at
+   two to four weeks — which is the substance of the comparison closing Part VI.
+8. **A negative result on generative feature extraction, obtained rather than argued.** A bounded
+   pilot (Part VII.5) had an open-weights model read the raw insider-transaction record and score
+   it directly, on a post-cutoff slice with identifiers stripped. Its scores are statistically
+   indistinguishable from the eight hand-crafted features, and both from omitting the data
+   altogether: feature engineering was not the binding constraint, the information content of the
+   record was. The pilot also yields a stability measurement on real financial records — the score
+   moves 59 to 96 percent as much between re-runs of an identical prompt as it does between
+   different companies — which is the kind of evidence the instability literature is usually cited
+   for in the abstract.
 
 ### VII.3 Honest caveats
 
@@ -686,11 +815,17 @@ clean-protocol test is real and only bounded, not removed, by the original-ftvol
 Cross-sectional level R² in individual backtest years is noisy and sometimes negative; the ranking
 metric is the reliable lens. The Stage C horizon-contrast interpretation (tone absorbed between
 call and filing) is a plausible reading supported by the results, not a demonstrated mechanism.
-The same holds for the Stage E conditioning results: two conditioners over two windows with no
-multiplicity adjustment, effects concentrated from 2018 onward — suggestive and directionally
-consistent, not confirmatory. The horizon term structure (Part III.4) carries the analogous
-qualification: its evidence is the monotone pattern across four horizons, no single one of which
-is individually significant.
+The same holds for the Stage E conditioning result: conditioners tested over two windows and eight
+horizons with no multiplicity adjustment, effects concentrated from 2018 onward — suggestive and
+directionally consistent, not confirmatory. One member of that family did not survive the horizon
+sweep and is withdrawn in Part VI; it is reported as withdrawn rather than removed, because a
+study that only ever adds findings is not being audited. The horizon term structure (Part III.4)
+carries its own qualification, which the added short-horizon significance makes more rather than
+less important to state: eight horizons were swept without a multiplicity adjustment, so the
+evidence is the shape of the curve, not the individual p-values at three, five and seven days. The
+generative pilot of Part VII.5 is bounded by design to 2024 and 2025, so its contamination probe
+is a placebo check on a post-cutoff slice and says nothing about the backtest years where the
+contamination objection actually applies.
 
 ### VII.4 Open questions
 
@@ -698,22 +833,154 @@ is individually significant.
    or is the era-specificity fundamental? Out of scope for the current timeline; the design is
    specified.
 2. Answered (Part V): call tone does not survive the filing-level test, in 2025 or across the
-   2018–2024 backtest, while remaining informative at the call anchor. The open follow-on is
-   whether a shorter call-to-anchor gap (for example a mid-quarter anchor) recovers the signal.
-3. Does the struct+tfidf increment cross p = 0.05 as evaluation years accumulate?
+   2018–2024 backtest, at any of the eight horizons, while remaining informative at the call
+   anchor. The open follow-on is whether a shorter call-to-anchor gap (for example a mid-quarter
+   anchor) recovers the signal. The horizon sweep now gives that follow-on a target: the
+   call-anchored effect peaks at ten to twenty days, so a mid-quarter anchor should be paired with
+   a label of that length rather than with the monthly convention.
+3. Answered in an unexpected form (Part III.4): the struct+tfidf increment crosses p = 0.05 at the
+   three-, five- and seven-day horizons rather than by accumulating evaluation years, because
+   short realised-volatility windows are far less exposed to the 2020 regime break. Whether it
+   crosses at the thirty-day headline horizon as years accumulate remains open.
 4. How does the dual-contrastive replication compare quantitatively with Chiu et al. (2025) on
    their own task, as opposed to on ours?
 5. Does the state-dependence of the text increment (Part VI) replicate under other
    information-environment conditioners — most naturally news coverage intensity and news tone
-   dispersion — and does the disagreement effect strengthen as evaluation years accumulate?
+   dispersion — and does the disagreement effect strengthen as evaluation years accumulate? Any
+   such replication should be run across the horizon spectrum from the outset: that is what
+   separated the disagreement result from the abnormal-intensity result, and a single-horizon
+   replication would not have been able to tell them apart.
+
+### VII.5 The generative-LLM route, and why it is scoped out
+
+Every text representation in this study is an *encoder*: TF-IDF, SBERT, BGE, the DAPT model, the
+two task-aligned encoders. A distinct use of language models is untested here — prompting a
+*generative* model to score each filing on interpretable risk dimensions and feeding those scores
+in as dense features. It is the natural next question, and it differs from the encoder route in a
+way that could matter: the output is low-dimensional and interpretable, so it might resist the
+era-specific drift that defeats the dense encoders (Part III.3) in the way the lexicon-based tone
+features do. This subsection records why it is nevertheless out of scope, because the reasons are
+substantive rather than merely practical, because one of them is a result this study has already
+measured, and because a bounded pilot was run to make sure the position rested on evidence rather
+than on assertion. (Sources verified in `Literature_agent_llm_feasibility.md`.)
+
+**The elicited score is not a stable measuring instrument, measured here rather than assumed.**
+Before turning to the literature it is worth reporting what this study observed directly. In the
+pilot described below, an open-weights instruction model was asked to score 865 insider-trading
+windows on three zero-to-hundred dimensions, five independent times per filing, under a fixed
+prompt, a fixed model version and a fixed seed — conditions as favourable to stability as a
+deployment could realistically be. Not a single one of the 4,325 responses failed to parse, so
+what follows is not a formatting artifact. The median standard deviation across the five re-runs
+of the *same* prompt on the *same* filing was 59 percent of the standard deviation across
+*different* filings on the volatility-risk dimension, 88 percent on information asymmetry, and 96
+percent on the model's own stated confidence. On the last of these the elicited score is very
+nearly pure noise: re-asking the identical question about one company moves the answer as much as
+switching to a different company. Averaging the five draws recovers almost none of it, lifting the
+information coefficient from 0.733 to 0.736. A feature must be a fixed measurement; a quantity
+whose re-measurement error approaches its cross-sectional signal is not one.
+
+The literature explains why this should be expected and shows that it is worse along axes the
+pilot held fixed. Sclar et al. (2024) find open-source
+models "extremely sensitive to subtle changes in prompt formatting", with performance differences
+"of up to 76 accuracy points" on LLaMA-2-13B under changes that are explicitly *meaning-preserving*
+— the same question, typeset differently. Ouyang et al. (2024) find repeated identical requests
+disagreeing on 47.6–75.8% of tasks and report that "setting the temperature to 0 does not guarantee
+determinism" (their domain is code generation, so this establishes the decoding mechanism rather
+than a magnitude for a scoring task). Wang et al. (2023) show LLM scorers being flipped by
+reordering the candidates, in a pairwise-comparison setting rather than the absolute scoring
+proposed here. Across releases, Chen, Zaharia & Zou (2023) record GPT-4 falling from 84% to 51%
+accuracy on an unchanged task in three months. The pilot measured dispersion holding prompt, model
+version and decoding configuration constant; each of these results says that relaxing any one of
+those would make it worse.
+
+**Contamination is the binding constraint.** This is the stronger objection, because it attacks the
+backtest rather than the tooling. Glasserman & Lin (2023) show that when a model's training window
+overlaps the backtest period the result is biased through *two* channels: look-ahead bias, where the
+model knows the returns that followed, and a distraction effect, where general knowledge of the
+named company interferes with reading the text. The important point is counter-intuitive and worth
+stating precisely, because the naive version of this argument is wrong: the two channels run in
+*opposite* directions. In-sample they find that *anonymised* headlines outperform, "indicating that
+the distraction effect has a greater impact than look-ahead bias", and that this is "particularly
+strong for larger companies". The net bias therefore cannot be signed in advance on an S&P 500
+panel, which is precisely the large-firm regime where they report distraction dominating — and an
+unsignable bias cannot be bounded or corrected for, only avoided. The obvious mitigation, prompting
+the model to answer as of the filing date, is not dependable either: Wongchamcharoen & Glasserman
+(2025) show that such defences "implicitly assume that models understand chronology" and that models
+"struggle to maintain a single globally consistent timeline", on GPT-4.1, Claude-3.7 Sonnet and
+GPT-5 alike. Kong et al. (2026), reviewing 164 financial-LLM papers from 2023–2025, find no single
+one of these biases discussed in more than 28% of them.
+
+**Why this study is entitled to weight that second obstacle heavily.** Part III.2–III.3 measured the
+price of lookahead on this exact task: roughly 0.06 IC of apparent skill for an encoder trained on
+all pre-2025 labels and epoch-selected on the evaluation year, several times the size of the genuine
+text increment (+0.011 to +0.016). The encoder case was *fixable* — retrain under a strict pre-2017
+cutoff, freeze, and the apparent skill disappears, which is how the 0.06 figure was obtained. The
+generative case is not fixable the same way, because retraining the language model on a rolling
+window is computationally infeasible, a point Glasserman & Lin make directly. A route whose central
+validity threat this study can measure but cannot remove is the right one to decline.
+
+**The bounded pilot, and what it settles.** Declining a direction on argument alone invites the
+reply that the argument is a rationalisation, so the cheapest decisive version of the experiment
+was run before the position was fixed, with its stopping rule written down before any score was
+looked at. Scope was chosen so that the contamination objection could not apply to the pilot
+itself: only 2024 and 2025 filings were scored, both post-dating the model's training cutoff, and
+the prompts were identifier-stripped in the manner Glasserman & Lin propose — no ticker, no
+company or insider names, no absolute dates, only day offsets relative to the filing and
+pseudonymised insider labels. The model read the same pre-filing transaction window that the eight
+hand-crafted Form 4 features summarise, and its three scores were then compared against those
+features under one head and one set of folds, in the same five-fold within-year design used for
+the 2025 call gate and for the same reason: a score that exists only on the evaluation rows cannot
+be learned under a train-before-year split.
+
+The comparison is a null in every direction that matters. Against the structured baseline
+(information coefficient 0.736), the eight hand-crafted features give 0.730 and the model's scores
+give 0.736. The difference between the two feature blocks is +0.006 with a paired bootstrap
+interval of [−0.000, +0.013], inside the half-width its own stopping rule set, so the pilot closes
+as a measured null. The finding is not that the language model is bad at reading Form 4 records; it
+is that feature engineering was never the bottleneck. A hand-built summary of the insider record
+and a generative model's own reading of the raw record are statistically indistinguishable from
+each other, and both are indistinguishable from omitting insider information altogether — which is
+exactly what the level test of Part VI already found over seven and twelve backtest years. What
+binds is the information content of the record relative to a structured block that already carries
+realised volatility, drawdown and liquidity.
+
+One further reading deserves care, because it is easy to overclaim. Scoring the identified prompts
+as a control produced an information coefficient of 0.737 against the anonymised 0.736, a premium
+of +0.001 with an interval of [−0.004, +0.006]. On a post-cutoff slice there should be no
+look-ahead to find, so this is a placebo check that passed — evidence that the scoping decision
+worked, not a measurement showing contamination to be small. The years where the objection actually
+bites are 2018 to 2024, and by construction the pilot says nothing about them.
+
+A credible treatment would therefore require principled prompt-schema design, calibration and
+stability analysis across model versions, an identifier-anonymisation control of the kind
+Glasserman & Lin propose, explicit separation of contamination from signal, and inference over the
+full filing corpus for at least two model families under the admissibility discipline of Part
+III.2. That is a study in its own right, and it is identified here as a direction for future
+research rather than as an extension of this one. What this study contributes to it is a negative
+result obtained cheaply and a stability measurement obtained on real financial records.
 
 ---
 
 ## Appendix — Sources and citation verification
 
-*Sources for verification: `phase5/STRESS_TEST_RESULTS.md` (all stress-test tables),
+*Sources for verification: `phase5/STRESS_TEST_RESULTS.md` (all stress-test tables, including the
+volatility-window spectrum, the Form 4 versus calls comparison and the Round 8 pilot),
 `phase5/out/stress_grid_*.json` (machine-readable results), `original_pipeline_details.md`
-(original pipeline), `Literature_agent_study_extended.md` (citation provenance; the verification
+(original pipeline). The horizon spectrum of Part III.4 and the sweeps it feeds in Parts V and VI
+come from `dataset_config/compute_horizon_labels.py`, `phase5/run_horizon.py`,
+`phase5/form4_text_conditioning.py` and `phase5/call_combined_gate.py` under the `RISK_HORIZON` and
+`RISK_CALL_WINDOW` switches (job 3584156, `logs/run_horizon_spectrum.log`); the generative pilot of
+VII.5 from `dataset_config/build_form4_llm_prompts.py`, `phase5/llm_score_form4.py` and
+`phase5/llm_vs_manual.py` on branch `exp/llm-event-scoring` (job 3584249,
+`logs/run_llm_form4.log`), whose stopping rule is stated in the docstring of the last of these and
+was fixed before any score was read.
+`Literature_agent_llm_feasibility.md` (Round 8, 2026-08-04 — the seven
+generative-LLM sources behind VII.5, each downloaded from arXiv and checked by text extraction
+against the claim it supports, since the `Literature/` PDF directories are not on the cluster;
+it records one material correction, that Glasserman & Lin's in-sample finding runs opposite to
+the intuitive reading of look-ahead bias, two domain caveats on Ouyang et al. and Wang et al.,
+and one candidate rejected for being downloaded but not verified in detail),
+`Literature_agent_study_extended.md` (citation provenance; the verification
 log at the end of that file records a full four-round PDF pass completed on 2026-07-07, in which
 every content, numeric and bibliographic claim was checked against its source PDF, and all
 corrections are already reflected in this document. The load-bearing ones: the long-document

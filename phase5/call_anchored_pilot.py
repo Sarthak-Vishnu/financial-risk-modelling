@@ -15,6 +15,7 @@ Run:  python phase5/call_anchored_pilot.py
 """
 
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -30,7 +31,7 @@ from build_call_features import call_records, _extract, _date_of, _ticker_of  # 
 import json
 
 ANNUALIZE = math.sqrt(252)
-WINDOW = 30
+WINDOW = int(os.environ.get("RISK_CALL_WINDOW", "30"))   # see call_combined_gate.py
 TONE = ["call_uncertainty_dens", "call_negative_dens", "call_positive_dens",
         "call_risk_dens", "call_qa_uncertainty", "call_n_words"]
 
@@ -65,7 +66,7 @@ def main():
     df["logfwd"] = np.log(df["fwd"].clip(lower=1e-6))
     df["loglag"] = np.log(df["lag"].clip(lower=1e-6))
     df["q"] = df["call_date"].dt.to_period("Q").astype(str)
-    print(f"Usable calls (with a 30d forward window): {len(df):,} | "
+    print(f"Usable calls (with a {WINDOW}d forward window): {len(df):,} | "
           f"{df.ticker.nunique()} tickers | quarters {sorted(df.q.unique())}\n")
 
     # baseline: does last-30d vol predict next-30d vol after a call?

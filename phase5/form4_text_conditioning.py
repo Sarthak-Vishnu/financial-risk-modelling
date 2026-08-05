@@ -70,7 +70,8 @@ def main():
     py_t = E.per_year_metrics(y, pred_text, years, E.TEST_YEARS)
     d, p = E.paired_year_test(py_t, py_b, key="spear")
     print(f"Unconditional text increment: dIC {d:+.3f} (p={p:.3f})  "
-          f"[anchor: +0.016 p=0.098 (7yr) / +0.011 p=0.057 (12yr)]\n")
+          f"[anchor: +0.016 p=0.098 (7yr) / +0.011 p=0.057 (12yr)]")
+    print(f"SUMMARY_F4UNCOND H={E.HORIZON:<3d} uncond dIC {d:+.3f} p={p:.3f}\n")
 
     for cond in CONDITIONERS:
         cvar = Xf4[:, f4_cols.index(cond)]
@@ -97,6 +98,9 @@ def main():
             t = ttest_1samp(diffs, 0.0)
             print(f"mean(high-low dIC) = {np.mean(diffs):+.3f}  t = {t.statistic:.2f}  "
                   f"p = {t.pvalue:.3f}  ({len(diffs)} years)")
+            print(f"SUMMARY_F4COND H={E.HORIZON:<3d} {cond:17s} high-low dIC "
+                  f"{np.mean(diffs):+.3f} t={t.statistic:+.2f} p={t.pvalue:.3f} "
+                  f"pos {sum(d > 0 for d in diffs)}/{len(diffs)}")
             print("Hypothesis (pre-registered): positive => text increment concentrates in the "
                   "high-asymmetry half.\n")
         else:

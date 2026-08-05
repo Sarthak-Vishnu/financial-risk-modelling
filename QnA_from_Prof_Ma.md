@@ -61,6 +61,36 @@ persistent — and that persistent component is exactly what the structured bloc
 What text contributes is the transient, near-filing component of uncertainty, which washes out
 of the target as the horizon lengthens. See Q2 for the interpretation.
 
+**Extended to the full spectrum at Prof Ma's request (job 3584156, 2026-08-05).** The meeting of
+2026-08-04 asked for the short end — 1/3/5/7 days — and for the whole spectrum from 3 to 90 days
+presented in comparison. The spectrum starts at 3 rather than 1 because the label is a sample
+standard deviation, undefined for a single observation; answering H=1 would mean substituting a
+different estimator (|r|·√252) partway along the curve, and at one day the target stops being a
+dispersion measure at all. One estimator across the whole spectrum is worth more than one extra
+point on it.
+
+| horizon | lagged IC | structured [ridge] | struct+tfidf | text ΔIC (paired) | p | ΔIC / struct |
+|---|---|---|---|---|---|---|
+| 3d | 0.193 | 0.330 | 0.351 | **+0.021** | **0.020** | +6.4% |
+| 5d | 0.289 | 0.417 | 0.441 | **+0.023** | **0.017** | +5.5% |
+| 7d | 0.299 | 0.444 | 0.470 | **+0.027** | **0.014** | +6.1% |
+| 10d | 0.314 | 0.462 | 0.482 | +0.020 | 0.076 | +4.3% |
+| 20d | 0.401 | 0.513 | 0.532 | +0.020 | 0.119 | +3.9% |
+| 30d | 0.461 | 0.546 | 0.561 | +0.016 | 0.098 | +2.9% |
+| 60d | 0.528 | 0.592 | 0.591 | −0.001 | 0.851 | −0.2% |
+| 90d | 0.534 | 0.607 | 0.602 | −0.005 | 0.477 | −0.8% |
+
+The four-point answer becomes an eight-point curve and gains a shape it did not have: the text
+increment is **single-peaked at 7 days** (+0.027) and decays monotonically to zero by 60. The
+ranking answer is unchanged and now rests on eight horizons rather than four — struct+tfidf ≥
+structured ≥ lagged everywhere, val-2025 agreeing throughout.
+
+One result changed status. **The increment clears p < 0.05 at 3, 5 and 7 days**, the first time
+anywhere in the study, because short realised-vol windows are far less exposed to the 2020 regime
+break (IC_t rises from 5.9 at 30d to 11.7 at 3d). Stated with its bound: eight horizons swept
+without multiplicity adjustment, so the defensible claim remains the shape of the curve, with the
+short-end significance as corroboration rather than as the headline.
+
 ---
 
 ## Q2. If the results are *not* consistent across horizons — then what?
@@ -98,6 +128,19 @@ matters only in short windows. The headline claims were already stated at their 
 30-day monthly horizon…") and now carry measured support on both sides: the increment is real
 where claimed and demonstrably absent at 60–90 days. The representation ranking did **not** flip
 at any horizon, so the encoder comparison stays closed.
+
+**Sharpened by the full spectrum (2026-08-05).** With 3/5/7/10-day points added, the curve is
++0.021 / +0.023 / +0.027 / +0.020 / +0.020 / +0.016 / −0.001 / −0.005 across 3 to 90 days: not a
+monotone decline but a **single peak at 7 days**. The mechanism above survives and is now located
+rather than inferred — the transient near-filing component of uncertainty is a one-to-two-week
+phenomenon, at its strongest within the first fortnight after the filing and gone by the quarter.
+The spectrum also did work beyond answering the question. Run through the earnings-call lanes it
+showed Stage C's filing-anchor null holding at *every* horizon (so that null is not a 30-day
+artifact), and run through the Form 4 conditioning test it retired one previously significant
+result: `f4_abn_intensity` (−0.012, p=0.037 at 30d) is null at all seven other horizons and is
+withdrawn as a lone-horizon fluke, while `f4_disagreement` is corroborated by its neighbour
+(+0.029 at 20d, +0.030 at 30d) and stands. Full tables in `phase5/STRESS_TEST_RESULTS.md`;
+interpretation and the Form 4 vs calls comparison in `study_extended.md` Parts III.4, V and VI.
 
 ---
 
@@ -192,14 +235,87 @@ an open model (general: e.g. Llama/Qwen-class; financial: e.g. a finance-tuned v
 each filing on interpretable risk dimensions (litigation exposure, leverage concern, demand
 uncertainty, …) and feeding those scores as dense features. This differs from embeddings in that
 the output is low-dimensional and interpretable, so it may in principle resist the drift problem
-the same way the lexicon-based tone features do. Whether interpretable LLM-elicited features can
-surpass count-based representations — and whether financial-domain tuning changes that answer —
-is, however, a research question of considerable depth in its own right: a credible treatment
-would require principled prompt-schema design, calibration and stability analysis across model
-versions, inference over the full filing corpus for at least two model families, and the same
-multi-year admissibility discipline this study applies to encoders. It is therefore identified
-here as a substantive direction for future research rather than as an extension of the present
-study, whose scope and time constraints it exceeds.
+the same way the lexicon-based tone features do.
+
+Two obstacles stand in the way, and they are of different orders. (Sources verified in
+`Literature_agent_llm_feasibility.md`, Round 8.)
+
+**Obstacle 1 — the elicited score is not a fixed measuring instrument.** Sclar et al. (2024,
+ICLR) find open-source LLMs "extremely sensitive to subtle changes in prompt formatting", with
+performance differences "of up to 76 accuracy points" on LLaMA-2-13B under *meaning-preserving*
+formatting changes alone. Ouyang et al. (2024) find that repeated identical requests disagree on
+47.6–75.8% of tasks and that "setting the temperature to 0 does not guarantee determinism" (their
+domain is code generation, so this supports the decoding mechanism rather than a scoring-task
+magnitude). Wang et al. (2023) show LLM scorers can be flipped by reordering the candidates,
+though in a pairwise-comparison setting rather than the absolute scoring proposed here. Across
+versions, Chen, Zaharia & Zou (2023) record GPT-4 falling from 84% to 51% accuracy on an unchanged
+task between two releases three months apart. A feature has to be a stable measurement; this is
+not one.
+
+**Obstacle 2 — contamination, which is the binding constraint.** This is the stronger objection
+because it attacks the *backtest*, not the tooling, and it is the one this study is best positioned
+to appreciate. Glasserman & Lin (2023) show that when an LLM's training window overlaps the
+backtest period, the result is biased through *two* channels: look-ahead bias (the model knows the
+returns that followed) and a distraction effect (general knowledge of the named company interferes
+with reading the text). Critically, and against the intuitive reading, the two run in opposite
+directions — in-sample they find *anonymised* headlines outperform, "indicating that the distraction
+effect has a greater impact than look-ahead bias", and that this is "particularly strong for larger
+companies". The net bias therefore cannot be signed in advance on an S&P 500 panel, which is the
+large-firm regime where they report distraction dominating. An unsignable bias cannot be bounded or
+corrected for, only avoided. The natural mitigation — instructing the model to answer as of the
+filing date — is not reliable either: Wongchamcharoen & Glasserman (2025) show that prompt-based
+defences "implicitly assume that models understand chronology", and that models "struggle to
+maintain a single globally consistent timeline" (tested on GPT-4.1, Claude-3.7 Sonnet and GPT-5).
+Kong et al. (2026), reviewing 164 financial-LLM papers from 2023–2025, find no single such bias
+discussed in more than 28% of them.
+
+**Why this study is entitled to weight that second obstacle heavily.** Q4 measured the price of
+lookahead on this exact task: ~0.06 IC of apparent skill for an encoder trained on all pre-2025
+labels, several times the genuine text increment (+0.011 to +0.016). A generative model pretrained
+on the open web carries *more* of that exposure than a 110M-parameter encoder trained only on the
+10-K corpus, not less — and unlike the encoder case, it cannot be removed by retraining under a
+clean protocol, because retraining the LLM is infeasible.
+
+**A bounded pilot was nevertheless run, so the position rests on evidence (job 3584249,
+2026-08-05).** Prof Ma asked at the 2026-08-04 meeting for exactly this experiment on the event
+datasets. It was run at the smallest scale that could answer it, on branch
+`exp/llm-event-scoring`, with a stopping rule fixed before any score was read. Qwen2.5-7B-Instruct
+was given the same pre-filing Form 4 transaction window that the eight hand-crafted `f4_*`
+features summarise, rendered as a table, and asked for three 0–100 scores; K=5 samples per filing;
+865 filings restricted to **2024 and 2025 only**, both post-dating the model's training cutoff, so
+contamination cannot apply to the pilot itself; prompts identifier-stripped (no ticker, no company
+or insider names, no absolute dates — only day offsets and pseudonymised insiders), which is
+Glasserman & Lin's own proposed control, with an identified lane scored separately as the probe.
+
+*Result 1 — obstacle 1, measured on our own data.* 0 parse failures in 4,325 samples. Median
+within-filing SD across five re-runs of the identical prompt, as a fraction of the across-filing
+SD: **0.59** (volatility risk), **0.88** (information asymmetry), **0.96** (confidence). Re-asking
+the same question about one company moves the answer nearly as much as switching companies —
+and this is with prompt, model version and seed all held fixed, i.e. the conditions the citations
+above say are the *favourable* case. Averaging the five draws recovers +0.003 IC.
+
+*Result 2 — the comparison Prof Ma asked for.* Under one head and identical folds (5-fold within
+year, the `call_filing_gate.py` design): structured 0.736, structured + the eight hand-crafted
+features 0.730, structured + the three LLM scores 0.736. ΔIC(LLM vs manual) = **+0.006, 95% CI
+[−0.000, +0.013]** → **MEASURED NULL** by its own stopping rule; the pilot closes and is not
+expanded. The reading is not that the model reads Form 4s badly — it is that **feature engineering
+was never the bottleneck**. Both blocks are indistinguishable from each other *and* from omitting
+insider data entirely, which is what Stage E's level test already found over 7 and 12 backtest
+years.
+
+*Result 3 — the contamination probe, stated precisely.* identified 0.737 vs anonymised 0.736,
+premium +0.001 [−0.004, +0.006]. On a post-cutoff slice there *should* be nothing to find, so this
+is a **placebo check that passed** — evidence the scoping worked, not a measurement that
+contamination is small. The years where the objection bites are 2018–2024, about which the pilot
+is silent by construction.
+
+A credible treatment would therefore require principled prompt-schema design, calibration and
+stability analysis across model versions, an identifier-anonymisation control of the kind
+Glasserman & Lin propose, separation of contamination from signal, and inference over the full
+filing corpus for at least two model families under the same multi-year admissibility discipline
+this study applies to encoders. It is identified here as a substantive direction for future
+research rather than as an extension of the present study — now with a measured null and a
+stability number behind that judgement rather than citations alone.
 
 ---
 
@@ -207,11 +323,11 @@ study, whose scope and time constraints it exceeds.
 
 | question | answerable from existing results? | new experiment needed |
 |---|---|---|
-| Q1 horizon consistency | **yes — measured (2026-07-20)**: ranking consistent at every horizon; increment size is not | no — done |
-| Q2 if inconsistent | **answered — the term structure IS the finding**: +0.020/+0.016/−0.001/−0.005 at 20/30/60/90d | no — done |
+| Q1 horizon consistency | **yes — measured over 8 horizons (2026-08-05)**: ranking consistent at every one; increment size is not | no — done |
+| Q2 if inconsistent | **answered — the term structure IS the finding**: single-peaked, +0.021/+0.023/**+0.027**/+0.020/+0.020/+0.016/−0.001/−0.005 at 3/5/7/10/20/30/60/90d, and p<0.05 at 3/5/7d | no — done |
 | Q3 LLM vs TF-IDF | **yes — answered (no, at encoder scale)** | optional: decoder-scale embedder |
 | Q4 lookahead bias | **yes — answered and quantified (~0.06 IC)** | no |
-| Q5 financial vs general LLM extractor | partially (embedding route tested; domain pretraining did not help) | identified as a future research direction — beyond the scope of the present study |
+| Q5 financial vs general LLM extractor | **yes — embedding route tested (domain pretraining did not help) and generative route now piloted (2026-08-05): MEASURED NULL, ΔIC +0.006 CI [−0.000,+0.013] vs the hand-crafted features, plus a within-filing score-instability ratio of 0.59–0.96** | no — generative route scoped out on two sourced obstacles *and* one measured null |
 
 ---
 
