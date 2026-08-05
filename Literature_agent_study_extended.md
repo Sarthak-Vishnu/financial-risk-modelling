@@ -697,7 +697,7 @@ requiring any new download. Cite this instead.
 |---|---|---|---|---|
 | 1a | Volatility persistence / HAR-RV | Corsi (2009) | J. Financial Econometrics | ✅ Yes |
 | 1a | Longer windows smoother/more persistent | Corsi (2009) | J. Financial Econometrics | ✅ Yes |
-| 1a | "30 trading days is the standard monthly window" | *(no supporting paper — Corsi's own monthly window is 22 days, not 30)* | — | ❌ NOT SUPPORTED |
+| 1a | "30 trading days is the standard monthly window" | *(no supporting paper — Corsi's own monthly window is 22 days, not 30)* | — | ❌ NOT SUPPORTED → **RESOLVED 2026-08-05**: study_extended.md Part 0.1 and III.4 now state 30d as this study's own design choice, close to but distinct from Corsi's 22-day monthly component (Priority 1 fix below, option 2) |
 | 1b–e | Size, leverage, B/M, beta, IVOL | Ang, Hodrick, Xing & Zhang (2006) | JF | ✅ Yes |
 | 1d | Book-to-market as risk factor | Fama & French (1992) | JF | ✅ Yes |
 | 1f | Amihud illiquidity | Amihud (2002) | J. Financial Markets | ✅ Yes |

@@ -32,7 +32,17 @@ The task is to predict a firm's 30-day forward realised volatility from the text
 Item 1A "Risk Factors" disclosure. Volatility is defined as the standard deviation of daily log
 returns over the 30 trading days strictly after the filing date, annualised by multiplying by the
 square root of 252. The corresponding lagged measure uses the 30 trading days strictly before the
-filing date. The modelling target is the natural logarithm of forward volatility, because
+filing date.
+
+The window length is close to the one-month realised-volatility horizon of the HAR-RV literature
+without being identical to it: Corsi (2009, §3.2) defines the monthly component as 22 trading
+days, and this study uses a slightly longer 30-trading-day window so that every filing's label
+closes comfortably inside the sample. The distinction is worth stating rather than glossing,
+because 30 trading days is approximately six calendar weeks and is therefore this study's own
+design choice rather than a convention it inherits. Part III.4 removes the need to defend the
+choice at all, by re-running the entire evaluation across eight windows from 3 to 90 trading days.
+
+The modelling target is the natural logarithm of forward volatility, because
 volatility is approximately log-normal and strictly positive, and using the log once and
 everywhere keeps error metrics comparable across all models.
 
@@ -426,9 +436,10 @@ which bounds how much the handicap can be hiding.
 ### III.4 The horizon of the text increment
 
 Every result so far is stated at one horizon: realised volatility over the 30 trading days after
-the filing, the monthly convention of the realised-volatility literature. That horizon is a
-design choice, and the last robustness question is whether the study's conclusions are specific
-to it. Labels were therefore regenerated across a spectrum of seven further horizons — 3, 5, 7,
+the filing. As Part 0.1 notes, that is close to but not the same as the one-month horizon of the
+realised-volatility literature, whose monthly component Corsi (2009) sets at 22 trading days; it
+is this study's own design choice rather than an inherited convention, and the last robustness
+question is whether the study's conclusions are specific to it. Labels were therefore regenerated across a spectrum of seven further horizons — 3, 5, 7,
 10, 20, 60 and 90 trading days — under the identical definition (standard deviation of daily log
 returns over the window strictly after — and, for the lagged predictor, strictly before — the
 filing date, annualised), from the same price sources as the structured features. The
@@ -493,9 +504,9 @@ argument touches, with the short-end significance as corroboration rather than a
 Read alongside Parts V and VI, this completes the same absorption logic in a third dimension:
 earnings-call tone showed *when* in time a text signal stops adding value, the
 insider-conditioning analysis showed *for which firms* it adds most, and the term structure shows
-*at which horizon* it exists at all. The headline increment is thus a property of the monthly
-horizon at which the study states it — near its maximum from three to twenty days, still present
-at thirty, and demonstrably absent by sixty. The comparison at the close of Part VI takes this
+*at which horizon* it exists at all. The headline increment is thus a property of the horizon at
+which the study states it — near its maximum from three to twenty days, still present at thirty,
+and demonstrably absent by sixty. The comparison at the close of Part VI takes this
 further, because the three effects turn out not to peak at the same horizon.
 
 ---
@@ -662,6 +673,15 @@ splitting each test year at its median is knowable at prediction time, so the an
 leakage-free by construction. Within each half the paired per-year ΔIC is computed on the same
 firms, and the high-minus-low difference is tested across years.
 
+The design itself appears to be this study's own rather than a replication. Both of its ingredients
+are standard — median splits of a cross-section on a pre-filing conditioner, and paired-by-year
+tests of an incremental information coefficient — but no precedent was found, in the reading behind
+this study, for conditioning a *text increment* on an insider-trading state in order to ask where
+in the cross-section that increment is earned. The claim is stated as a search result rather than
+as established novelty, and it cuts both ways: an untested design carries no external validation of
+its behaviour, which is part of why the results below are reported as suggestive and why the
+horizon sweep that follows was allowed to overturn one of them.
+
 The two conditioners initially appeared to answer in opposite directions. Conditioned on insider
 *disagreement*, the hypothesis holds: the increment is larger where trading insiders are split
 (high-minus-low ΔIC of +0.029, t = +2.04, p = 0.088 over seven years, positive in six of seven;
@@ -783,10 +803,13 @@ conditions extending to the training provenance of the encoders themselves.
    signal is absorbed into the structured features during the call-to-filing gap, which
    identifies when an additional text source is worth attaching: only while its information has
    not yet been impounded into cheaper, fresher predictors.
-6. **Suggestive evidence that the text increment is state-dependent.** Conditioning the text
-   increment on pre-filing insider activity (Part VI) indicates it concentrates in firms whose
-   insiders disagree — the cross-sectional counterpart of the absorption reading, subject to the
-   bounds stated in Part VI, and corroborated across two adjacent horizons.
+6. **A design for asking where a text increment is earned, and suggestive evidence from it.**
+   Conditioning the text increment on pre-filing insider activity (Part VI) indicates it
+   concentrates in firms whose insiders disagree — the cross-sectional counterpart of the
+   absorption reading, subject to the bounds stated in Part VI, and corroborated across two
+   adjacent horizons. The conditioning design is a contribution in its own right: its ingredients
+   are standard, but no precedent was found for using an insider-trading state to locate *where in
+   the cross-section* a text increment lives, as opposed to testing whether it exists on average.
 7. **A term structure for the text increment, and a horizon axis that discriminates.**
    Relabelling the task across eight horizons from 3 to 90 trading days (Part III.4) shows the
    model ranking is horizon-robust while the text increment itself is single-peaked at seven days
@@ -837,7 +860,7 @@ contamination objection actually applies.
    anchor. The open follow-on is whether a shorter call-to-anchor gap (for example a mid-quarter
    anchor) recovers the signal. The horizon sweep now gives that follow-on a target: the
    call-anchored effect peaks at ten to twenty days, so a mid-quarter anchor should be paired with
-   a label of that length rather than with the monthly convention.
+   a label of that length rather than with the study's thirty-day headline window.
 3. Answered in an unexpected form (Part III.4): the struct+tfidf increment crosses p = 0.05 at the
    three-, five- and seven-day horizons rather than by accumulating evaluation years, because
    short realised-volatility windows are far less exposed to the 2020 regime break. Whether it
@@ -850,6 +873,27 @@ contamination objection actually applies.
    such replication should be run across the horizon spectrum from the outset: that is what
    separated the disagreement result from the abnormal-intensity result, and a single-horizon
    replication would not have been able to tell them apart.
+
+   This question is left open deliberately rather than by omission, and the reason is worth
+   recording because news data was assessed for inclusion and declined on two independent grounds.
+   The natural corpus, GDELT's Global Knowledge Graph 1.0, identifies firms only as free-text
+   organisation names, carrying neither a CIK nor a ticker. Linking it to this study's panel would
+   therefore require a temporally valid name-to-firm bridge: renames and restructurings resolving
+   to the right entity in the right period, subsidiaries rolling up to their parents, and genuine
+   disambiguation for firms whose names are ordinary English words, which naive string matching
+   floods with false positives. Every downstream number would inherit the quality of that mapping,
+   and the audit described in Part III.2 is this study's own demonstration of how far a subtle join
+   defect propagates before it becomes visible; building and validating such a layer to the
+   standard applied everywhere else here is a project-sized prerequisite rather than a
+   preliminary. Second, the coverage does not align. Every other source in this study — filings,
+   structured market features, call transcripts, Form 4 transactions — spans 2006 to 2026, whereas
+   GKG 1.0 begins in April 2013 and, after trailing feature windows, is usable from about 2014.
+   That forecloses the twelve-year backtest that every other result reports alongside the
+   seven-year window, so a news finding would rest on strictly weaker evidence than the results
+   standing next to it, and the cross-stage comparability the evaluation protocol is built on
+   would not hold for it. The design is therefore kept on the record as specified future work
+   whose data-engineering prerequisite exceeds the present study, rather than presented as an
+   untested idea.
 
 ### VII.5 The generative-LLM route, and why it is scoped out
 
@@ -987,7 +1031,10 @@ corrections are already reflected in this document. The load-bearing ones: the l
 windowing precedent is Beltagy et al. 2020 Section 2 with Yang et al. 2020 and Chiu et al. 2025
 (SBERT and BERT dropped from that claim); FinMTEB contains no temporal-shift analysis and is cited
 only for its bag-of-words-versus-dense finding; the Corsi 2009 R² figures are the specific Table 4
-values rather than a blanket range; the Lazy-Prices alpha is attributed to investor under-reaction
+values rather than a blanket range; the 30-trading-day label window is stated as this study's own
+design choice rather than as a convention inherited from that literature, since Corsi's monthly
+component is 22 trading days and no source supports 30 as "monthly" — the Round 7 correction, now
+applied in Part 0.1 and Part III.4; the Lazy-Prices alpha is attributed to investor under-reaction
 rather than to filings changing little; the Grinold and Kahn benchmark is the concrete IC-to-
 information-ratio result; and the Lopez de Prado references are chapters 7, 11 and 12. Two
 bibliographic housekeeping items remain open in the citations file, neither a content error: the
