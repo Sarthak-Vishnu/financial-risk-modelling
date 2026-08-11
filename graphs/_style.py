@@ -66,11 +66,48 @@ def apply_style():
     })
 
 
-def save(fig, name):
-    """PDF for the thesis, PNG for eyeballing the result quickly."""
+def save(fig, name, exact_width=True):
+    """PDF for the thesis, PNG for eyeballing the result quickly.
+
+    exact_width writes the file at exactly TEXTWIDTH_IN, so
+    \\includegraphics[width=\\textwidth] applies no scaling and the point sizes set in
+    apply_style() are the sizes that land on the page.
+
+    This matters more than it sounds, and getting it wrong is invisible until the
+    figures sit side by side in the document. bbox_inches="tight" crops to content, so
+    three figures with different label widths come out at three different widths, and
+    width=\\textwidth then stretches each by a different factor. Measured on the first
+    version of these three: 390.6, 378.2 and 363.3 pt against a 411 pt text width, which
+    is 5%, 9% and 13% of upscaling, so a 12pt label renders at 12.6, 13.1 and 13.6pt in
+    the same chapter. tight_layout fits the content inside the fixed canvas instead of
+    shrinking the canvas to the content.
+
+    Pass exact_width=False for a figure with elements placed outside the axes, such as a
+    legend anchored below them, which tight_layout does not account for and will clip."""
     OUT.mkdir(exist_ok=True)
+    if exact_width:
+        if fig.get_layout_engine() is None:
+            fig.tight_layout(pad=0.35)
+        kw = {}
+    else:
+        kw = {"bbox_inches": "tight", "pad_inches": 0.02}
     for ext in ("pdf", "png"):
-        fig.savefig(OUT / f"{name}.{ext}", bbox_inches="tight", pad_inches=0.02)
+        fig.savefig(OUT / f"{name}.{ext}", **kw)
+
+    # Fixing the canvas size means content can now run off it, which a cropped save
+    # would silently have absorbed. Check rather than trust: a rotated multi-line
+    # y-label is the usual culprit, because its text length becomes its vertical
+    # extent and it can end up taller than the panel it labels.
+    if exact_width:
+        bb = fig.get_tightbbox(fig.canvas.get_renderer())
+        w, h = fig.get_size_inches()
+        over = [side for side, bad in (("left", bb.x0 < -0.01), ("bottom", bb.y0 < -0.01),
+                                       ("right", bb.x1 > w + 0.01), ("top", bb.y1 > h + 0.01))
+                if bad]
+        if over:
+            print(f"  WARNING: {name} content overflows the canvas on the "
+                  f"{', '.join(over)}. It will be clipped in the PDF.")
+
     print(f"wrote {OUT / (name + '.pdf')}  and  {OUT / (name + '.png')}")
     plt.close(fig)
 

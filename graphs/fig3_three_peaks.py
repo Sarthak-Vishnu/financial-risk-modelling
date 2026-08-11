@@ -61,8 +61,8 @@ def main():
     apply_style()
     X = window_positions(WINDOWS)
     fig, axes = plt.subplots(
-        3, 1, figsize=(TEXTWIDTH_IN, 6.4), sharex=True,
-        gridspec_kw={"hspace": 0.18})
+        3, 1, figsize=(TEXTWIDTH_IN, 6.4), sharex=True, layout="constrained")
+    fig.get_layout_engine().set(hspace=0.04, h_pad=0.02, w_pad=0.02)
 
     for ax, (name, values, colour, reduced) in zip(axes, PANELS):
         ax.axhline(0, color=C["grey"], linewidth=1.0, zorder=1)

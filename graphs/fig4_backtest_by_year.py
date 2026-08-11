@@ -98,7 +98,7 @@ def main():
         check_against_table_43(lane, values)
 
     apply_style()
-    fig, ax = plt.subplots(figsize=(TEXTWIDTH_IN, 3.9))
+    fig, ax = plt.subplots(figsize=(TEXTWIDTH_IN, 3.9), layout="constrained")
 
     ax.axvspan(REGIME_YEAR - 0.5, REGIME_YEAR + 0.5, color=C["faint"], alpha=0.35,
                zorder=0, linewidth=0)

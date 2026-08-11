@@ -125,7 +125,7 @@ def main():
     ]
     ax.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, -0.30), ncol=1)
 
-    save(fig, "fig2_extra_delta_by_family")
+    save(fig, "fig2_extra_delta_by_family", exact_width=False)
 
 
 if __name__ == "__main__":

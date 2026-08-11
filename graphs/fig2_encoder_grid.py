@@ -124,7 +124,7 @@ def main():
     ]
     ax.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, -0.32), ncol=1)
 
-    save(fig, "fig2_encoder_grid")
+    save(fig, "fig2_encoder_grid", exact_width=False)
 
 
 if __name__ == "__main__":
