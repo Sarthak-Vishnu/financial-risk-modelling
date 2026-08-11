@@ -43,7 +43,7 @@ import eval_common as E  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 
 OUT_DIR = ROOT / "phase5" / "out"
-ENCODERS = ["dual", "sbert", "volaware", "three_lora", "ftvol", "bge"]
+ENCODERS = ["dual", "sbert", "volaware", "three", "three_lora", "ftvol", "bge"]
 SPARSE_ALPHAS = (3.0, 10.0, 30.0)
 ANCHORS = {"structured [hgb]": 0.558, "struct+tfidf [sparse]": 0.610, "tfidf+lag [sparse]": 0.541}
 

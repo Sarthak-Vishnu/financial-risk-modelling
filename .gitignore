@@ -17,7 +17,13 @@ topics/data/
 topics/models/
 topics/out/
 baselines/out/
-phase5/out/
+# phase5/out stays excluded, with a narrow exception for the two val-2025 grid JSONs: the
+# write-up's encoder table is rebuilt from stress_grid_val2025_fixed.json directly rather than
+# from transcribed figures, and the .PREV.json is the only record of the pre-rerun numbers.
+# Everything else under phase5/out/ remains ignored.
+phase5/out/*
+!phase5/out/stress_grid_val2025_fixed.json
+!phase5/out/stress_grid_val2025_fixed.PREV.json
 
 # Python
 __pycache__/
