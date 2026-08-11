@@ -85,10 +85,11 @@ def main():
 
     # Naming the two models on the axis, not only in the caption: the lower panel is a
     # difference, and a difference is meaningless until the reader knows of what.
-    # Three short lines, not one long one. A rotated label's text length becomes its
-    # VERTICAL extent, so "struct+tfidf vs structured" on one line is taller than the
-    # panel it labels and spills past the figure edge.
-    ax2.set_ylabel("Text $\\Delta$IC\nstruct+tfidf\n$-$ structured", fontsize=10)
+    # A rotated label's text length becomes its VERTICAL extent, so the constraint is
+    # the panel height, not the figure width. Measured against a 2.14in lower panel:
+    # "Text DIC: struct vs struct+tfidf" is 2.20in, which just fits; the same line with
+    # "structured" spelled out is 2.53in and intrudes on the panel above.
+    ax2.set_ylabel("Text $\\Delta$IC: struct vs struct+tfidf", fontsize=10)
     ax2.set_xlabel("Measurement window (trading days)")
     ax2.set_ylim(-0.011, 0.037)
     ax2.legend(loc="lower left", ncol=2, handletextpad=0.3, columnspacing=1.2)
