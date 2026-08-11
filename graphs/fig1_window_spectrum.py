@@ -29,7 +29,8 @@ silently disagrees with its own table is worse than no figure.
 
 import matplotlib.pyplot as plt
 
-from _style import C, TEXTWIDTH_IN, apply_style, save, window_axis
+from _style import (C, TEXTWIDTH_IN, apply_style, save, window_axis,
+                    window_positions)
 
 # ---- Table 4.5 (tab:horizon) ------------------------------------------------
 WINDOWS = [3, 5, 7, 10, 20, 30, 60, 90]
@@ -44,16 +45,17 @@ ALPHA = 0.05
 
 def main():
     apply_style()
+    X = window_positions(WINDOWS)
     fig, (ax1, ax2) = plt.subplots(
         2, 1, figsize=(TEXTWIDTH_IN, 5.8), sharex=True,
         gridspec_kw={"height_ratios": [1.35, 1.0], "hspace": 0.12})
 
     # ---- upper: the three lanes ----
-    ax1.plot(WINDOWS, STRUCT_TFIDF, marker="o", color=C["blue"],
+    ax1.plot(X, STRUCT_TFIDF, marker="o", color=C["blue"],
              label=r"struct+tfidf [sparse]")
-    ax1.plot(WINDOWS, STRUCTURED, marker="s", color=C["vermillion"],
+    ax1.plot(X, STRUCTURED, marker="s", color=C["vermillion"],
              label=r"structured [ridge]")
-    ax1.plot(WINDOWS, LAGGED, marker="^", color=C["grey"],
+    ax1.plot(X, LAGGED, marker="^", color=C["grey"],
              label=r"lagged [hgb]")
     ax1.set_ylabel("Information coefficient")
     ax1.set_ylim(0.15, 0.66)
@@ -61,29 +63,29 @@ def main():
 
     # ---- lower: the increment ----
     ax2.axhline(0, color=C["grey"], linewidth=1.0, zorder=1)
-    ax2.plot(WINDOWS, DELTA, color=C["blue"], zorder=2)
+    ax2.plot(X, DELTA, color=C["blue"], zorder=2)
 
     sig = [i for i, p in enumerate(PVALUE) if p < ALPHA]
     non = [i for i, p in enumerate(PVALUE) if p >= ALPHA]
-    ax2.scatter([WINDOWS[i] for i in sig], [DELTA[i] for i in sig],
+    ax2.scatter([X[i] for i in sig], [DELTA[i] for i in sig],
                 s=70, facecolors=C["blue"], edgecolors=C["blue"], zorder=3,
                 label=rf"$p < {ALPHA:g}$")
-    ax2.scatter([WINDOWS[i] for i in non], [DELTA[i] for i in non],
+    ax2.scatter([X[i] for i in non], [DELTA[i] for i in non],
                 s=70, facecolors="white", edgecolors=C["blue"], linewidths=1.8,
                 zorder=3, label=rf"$p \geq {ALPHA:g}$")
 
     # mark the peak, which is the point Section 4.3.4 turns on
     peak = max(range(len(DELTA)), key=lambda i: DELTA[i])
     ax2.annotate(f"peak {DELTA[peak]:+.3f}\nat {WINDOWS[peak]} days",
-                 xy=(WINDOWS[peak], DELTA[peak]),
-                 xytext=(WINDOWS[peak] * 1.25, DELTA[peak] + 0.004),
+                 xy=(X[peak], DELTA[peak]),
+                 xytext=(X[peak] + 0.45, DELTA[peak] + 0.004),
                  fontsize=11, color=C["blue"],
                  arrowprops=dict(arrowstyle="-", color=C["blue"], linewidth=1.0))
 
     # Naming the two models on the axis, not only in the caption: the lower panel is a
     # difference, and a difference is meaningless until the reader knows of what.
     ax2.set_ylabel("Text $\\Delta$IC\nstruct+tfidf  vs  structured", fontsize=11)
-    ax2.set_xlabel("Measurement window (trading days, log scale)")
+    ax2.set_xlabel("Measurement window (trading days)")
     ax2.set_ylim(-0.011, 0.037)
     ax2.legend(loc="lower left", ncol=2, handletextpad=0.3, columnspacing=1.2)
 

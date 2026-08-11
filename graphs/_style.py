@@ -75,13 +75,24 @@ def save(fig, name):
     plt.close(fig)
 
 
-def window_axis(ax, windows):
-    """Log x-axis with a tick at each measured window and no minor-tick clutter.
+def window_positions(windows):
+    """Plot the measurement windows at evenly spaced positions, not at their values.
 
-    Log, not linear: the windows are 3 to 90 and a linear axis crushes the entire
-    short end, which is where the interesting structure is."""
-    ax.set_xscale("log")
-    ax.set_xticks(windows)
+    Linear is unusable: 3, 5, 7 and 10 days would occupy the first eighth of the axis,
+    and that is where all the structure sits. Log was the first alternative tried and is
+    worse than it looks, because it encodes RATIO rather than elapsed time. Under log the
+    step from 10 to 20 days is drawn wider than the step from 60 to 90, even though the
+    first spans ten days and the second thirty. A reader taking the axis to mean duration
+    is misled either way.
+
+    Evenly spaced positions claim nothing about the gaps at all. These are eight chosen
+    settings rather than samples of a continuum, every claim made about them concerns
+    order and location, and nobody reads a slope off these panels. The tick labels carry
+    the real values, so the axis is honest about what it is."""
+    return list(range(len(windows)))
+
+
+def window_axis(ax, windows):
+    ax.set_xticks(range(len(windows)))
     ax.set_xticklabels([str(w) for w in windows])
-    ax.minorticks_off()
-    ax.set_xlim(min(windows) * 0.85, max(windows) * 1.18)
+    ax.set_xlim(-0.35, len(windows) - 0.65)

@@ -1,4 +1,10 @@
-# CAPTION: Year-by-year information coefficient across the expanding-window backtest. Each point is a model trained on all filings strictly dated before that year and scored on it, so the series is what a deployed model would have produced. The shaded band marks 2020, whose regime break dominates the year-to-year variance of the thirty-day panel and is the reason the increment's significance resolves by shortening the measurement window rather than by accumulating further evaluation years.
+# CAPTION: Year-by-year information coefficient across the expanding-window backtest. Each
+# point is a model trained on all filings strictly dated before that year and scored on it,
+# so the series is what a deployed model would have produced. The shaded band marks 2020, 
+# whose regime break dominates the year-to-year variance of the thirty-day panel and is the
+# reason the increment's significance resolves by shortening the measurement window rather
+# than by accumulating further evaluation years.
+
 """Figure 4 -- the backtest year by year (thesis Section 4.3.1).
 
 Why a figure at all: Table 4.3 reports a mean IC and a t-statistic, and the prose says
@@ -29,12 +35,16 @@ from _style import C, TEXTWIDTH_IN, apply_style, save
 
 YEARS = list(range(2013, 2025))          # 2013 to 2024 inclusive
 
-# ---- TODO: paste the per-year IC for each lane, one value per year in YEARS ----
-# Leave a lane as an empty list to omit it from the figure.
+# ---- Per-year IC, from the backtest logs. One value per year in YEARS. ------
+# struct+tfidf 2020 is a real +0.00011923, not a missing value. 2020 is the year all
+# three models collapse, and persistence alone goes outright negative.
 SERIES = {
-    "struct+tfidf [sparse]": [],
-    "structured [ridge]":    [],
-    "lagged [hgb]":          [],
+    "struct+tfidf [sparse]": [0.714, 0.668, 0.561, 0.773, 0.719, 0.582,
+                              0.665, 0.000, 0.604, 0.750, 0.655, 0.673],
+    "structured [ridge]":    [0.714, 0.670, 0.549, 0.771, 0.715, 0.574,
+                              0.657, -0.025, 0.584, 0.749, 0.598, 0.682],
+    "lagged [hgb]":          [0.687, 0.649, 0.461, 0.679, 0.635, 0.484,
+                              0.543, -0.121, 0.650, 0.582, 0.485, 0.571],
 }
 
 STYLE = {
