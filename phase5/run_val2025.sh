@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=val2025
 #SBATCH --partition=Teaching
+#SBATCH --nodelist=damnii07
 #SBATCH --time=12:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -22,6 +23,22 @@ conda activate diss
 cd /home/s2880814/financial-risk-modelling
 
 export PYTHONUNBUFFERED=1
+
+# Pin every thread pool to 1. Measured by phase5/run_control.sh (job 3593789): two runs of an
+# identical configuration with these set agreed bit-for-bit on all 29 rows, while the unpinned
+# lanes drifted. Unpinned, OpenBLAS and libgomp reduce floats in an order that depends on the
+# thread count, and the tree heads and the randomised SVD amplify that into the second decimal.
+# Costs wall-time (2 cores -> 1 effective); buys a grid that can be quoted.
+#
+# --nodelist=damnii07 above matters as much as the pinning, and for the same reason one level
+# down. Thread pinning is only deterministic WITHIN a microarchitecture: run_control_xnode.sh
+# (job 3594278) repeated this exact pinned configuration on damnii07 and disagreed with the
+# opencast run by up to 1.8e-2 IC, because OpenBLAS dispatches kernels on runtime CPU capability
+# and a different vector unit sums in a different order. damnii07 (Xeon Silver 4114) is the node
+# that reproduces the published July grid bit-for-bit on all 21 shared rows, so it is the node
+# the published numbers are regenerable on. Change it and the pre-existing rows will move.
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+       NUMEXPR_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1
 
 # Guard: both new caches must exist, or the grid would silently skip the encoders this re-run
 # exists to add and produce a result that looks complete but is not. Refuse rather than mislead.

@@ -24,6 +24,7 @@ baselines/out/
 phase5/out/*
 !phase5/out/stress_grid_val2025_fixed.json
 !phase5/out/stress_grid_val2025_fixed.PREV.json
+!phase5/out/stress_grid_val2025_fixed.OPENCAST.json
 
 # Python
 __pycache__/

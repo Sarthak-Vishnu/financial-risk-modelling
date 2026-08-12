@@ -304,60 +304,75 @@ a ridge and a histogram gradient-boosted tree head. Metric is within-year cross-
 IC on validation 2025 (n = 393), with a bootstrap 95% CI, R² on the log level, and a Diebold-Mariano
 p-value against the `struct+tfidf [sparse]` reference. From
 `phase5/out/stress_grid_val2025_fixed.json`, computed on the P0-corrected data, run of
-2026-08-11 09:24–09:55.
+2026-08-12 04:24–05:23.
 
 | Condition | IC | 95% CI | R²_log | DM p vs ref |
 |---|---|---|---|---|
-| `struct+tfidf [sparse]` (reference) | 0.6032 | [0.5322, 0.6635] | 0.2260 | — |
-| `structured [ridge]` (no text) | 0.5912 | [0.5193, 0.6549] | 0.1747 | 1.24e-07 |
-| `lagged [hgb]` | 0.4463 | [0.3533, 0.5279] | −0.1209 | 2.54e-11 |
-| `struct+enc[dual] [ridge]` | 0.5819 | [0.5090, 0.6461] | 0.1618 | 0.0132 |
-| `struct+enc[dual] [hgb]` | 0.6008 | [0.5356, 0.6590] | 0.1923 | 0.351 |
-| `struct+enc[sbert] [ridge]` | 0.5618 | [0.4828, 0.6276] | 0.0170 | 8.62e-14 |
-| `struct+enc[sbert] [hgb]` | 0.5821 | [0.5141, 0.6406] | 0.1323 | 0.00739 |
-| `struct+enc[volaware] [ridge]` | 0.5866 | [0.5131, 0.6553] | 0.1475 | 0.00286 |
-| `struct+enc[volaware] [hgb]` | 0.5939 | [0.5246, 0.6544] | 0.1892 | 0.283 |
-| `struct+enc[three] [ridge]` | 0.5638 | [0.4883, 0.6302] | 0.0998 | 2.26e-06 |
-| `struct+enc[three] [hgb]` | 0.6147 | [0.5522, 0.6705] | 0.2326 | 0.865 |
-| `struct+enc[three_lora] [ridge]` | 0.5884 | [0.5171, 0.6526] | 0.1453 | 0.000861 |
-| `struct+enc[three_lora] [hgb]` | 0.6040 | [0.5386, 0.6635] | 0.1861 | 0.277 |
-| `struct+enc[ftvol] [ridge]` | 0.6058 | [0.5360, 0.6689] | 0.1849 | 0.207 |
-| `struct+enc[ftvol] [hgb]` | 0.6140 | [0.5452, 0.6765] | 0.1838 | 0.340 |
-| `struct+enc[bge] [ridge]` | 0.5800 | [0.5094, 0.6439] | 0.0932 | 1.39e-07 |
-| `struct+enc[bge] [hgb]` | 0.5979 | [0.5293, 0.6571] | 0.1400 | 0.0171 |
+| `struct+tfidf [sparse]` (reference) | 0.6032 | [0.5344, 0.6699] | 0.2260 | — |
+| `structured [ridge]` (no text) | 0.5912 | [0.5221, 0.6592] | 0.1747 | 1.25e-07 |
+| `structured [hgb]` | 0.5584 | [0.4873, 0.6277] | 0.0939 | 0.000645 |
+| `lagged [hgb]` | 0.4573 | [0.3744, 0.5409] | −0.1299 | 1.06e-11 |
+| `tfidf+lag [sparse]` | 0.5075 | [0.4277, 0.5852] | 0.0686 | 7.83e-05 |
+| `struct+tfidf_svd [ridge]` | 0.5936 | [0.5263, 0.6609] | 0.1668 | 9.22e-05 |
+| `struct+tfidf_svd [hgb]` | 0.5693 | [0.4990, 0.6386] | 0.1675 | 0.123 |
+| `struct+enc[dual] [ridge]` | 0.5819 | [0.5089, 0.6515] | 0.1618 | 0.0132 |
+| `struct+enc[dual] [hgb]` | 0.5823 | [0.5111, 0.6508] | 0.1599 | 0.0507 |
+| `struct+enc[sbert] [ridge]` | 0.5618 | [0.4819, 0.6359] | 0.0170 | 8.62e-14 |
+| `struct+enc[sbert] [hgb]` | 0.5914 | [0.5214, 0.6577] | 0.1494 | 0.0434 |
+| `struct+enc[volaware] [ridge]` | 0.5866 | [0.5144, 0.6557] | 0.1475 | 0.00287 |
+| `struct+enc[volaware] [hgb]` | 0.5972 | [0.5303, 0.6627] | 0.2072 | 0.593 |
+| `struct+enc[three] [ridge]` | 0.5638 | [0.4889, 0.6337] | 0.0998 | 2.27e-06 |
+| `struct+enc[three] [hgb]` | 0.5999 | [0.5325, 0.6618] | 0.2446 | 0.587 |
+| `struct+enc[three_lora] [ridge]` | 0.5884 | [0.5174, 0.6593] | 0.1453 | 0.000862 |
+| `struct+enc[three_lora] [hgb]` | 0.5958 | [0.5269, 0.6608] | 0.1985 | 0.430 |
+| `struct+enc[ftvol] [ridge]` | 0.6058 | [0.5404, 0.6725] | 0.1849 | 0.207 |
+| `struct+enc[ftvol] [hgb]` | 0.5979 | [0.5293, 0.6658] | 0.1670 | 0.155 |
+| `struct+enc[bge] [ridge]` | 0.5800 | [0.5062, 0.6486] | 0.0932 | 1.39e-07 |
+| `struct+enc[bge] [hgb]` | 0.5835 | [0.5121, 0.6509] | 0.1449 | 0.0232 |
+| `struct+change [hgb]` | 0.5565 | [0.4839, 0.6295] | 0.0836 | 0.000668 |
+| `struct+tfidf+change [sparse]` | 0.6090 | [0.5418, 0.6723] | 0.2195 | 0.355 |
 
 `three` and `three_lora` were encoded against the corrected corpus on 2026-08-11
-(`topics/run_encode_three.sh`) and entered the grid the same day; before that they had no downstream
+(`topics/run_encode_three.sh`) and entered the grid the next day; before that they had no downstream
 score at all, because `run_encode.sh` never covered them and `mean_pooled_filings` therefore returned
 `None`. Their rows above are the first corrected-data downstream numbers for the project's own
 three-view contribution.
 
-`struct+enc[three] [hgb]` at 0.6147 is the highest single IC in the grid, above the
-`struct+tfidf [sparse]` reference. It is not a win: the DM p-value against that reference is 0.865,
-its CI covers the reference throughout, and the tree-head lanes move by up to 0.018 IC between
-identical re-runs (see section 8). It is inside the noise, not above it.
+Neither reaches parity with the count-based reference under the ridge head — `three` at 2.27e-06 is
+among the worst in the table, `three_lora` at 0.000862 little better. Under the tree head both are
+statistically indistinguishable from it, `three` at DM p 0.587 and `three_lora` at 0.430, but so are
+`dual`, `volaware` and `ftvol`. The two conditions that *fail* parity under the tree head are
+`sbert` (0.0434) and `bge` (0.0232), the two general-purpose off-the-shelf encoders. On this
+evidence the separation runs along domain adaptation rather than along task alignment, and no
+encoder beats TF-IDF.
+
+`struct+enc[three] [hgb]` has the highest R²_log in the table at 0.2446, above the reference's
+0.2260, while its IC of 0.5999 sits mid-pack. That is the one respect in which the sector view leads,
+and it is a level-accuracy gain rather than a ranking gain.
 
 The `ftvol` rows above are the selection-inflated ones described in section 4 and must not be read
 as clean estimates.
 
 **Encoder-selection rows.** The grid's `EVERYTHING` conditions and its attention-pooling rows pick
-their encoder by maximising HGB IC *on the same validation rows they are then scored on*. Adding
-`three` moved that selection from `ftvol` to `three` on a margin of 0.0007 IC — an order of
-magnitude smaller than the run-to-run movement of those same lanes. The selected-encoder identity in
-those row names carries no evidential weight.
+their encoder by maximising HGB IC *on the same validation rows they are then scored on*. `three`
+takes that selection at 0.5999 against `ftvol`'s 0.5979, a margin of 0.0021, and the pooling rows go
+to those same top two. The selected-encoder identity in these row names is a within-sample artefact
+and carries no evidential weight.
 
 | Condition | IC | 95% CI | R²_log | DM p vs ref |
 |---|---|---|---|---|
-| `struct+enc[three,risk_weighted] [hgb]` | 0.6055 | [0.5405, 0.6649] | 0.2308 | 0.893 |
-| `struct+enc[three,topk_risk] [hgb]` | 0.6032 | [0.5362, 0.6627] | 0.2180 | 0.827 |
-| `EVERYTHING svd+enc[three]+chg [hgb]` | 0.6038 | [0.5375, 0.6621] | 0.1971 | 0.446 |
-| `EVERYTHING tfidf+enc[three]+chg [sparse]` | 0.5533 | [0.4789, 0.6230] | −0.0037 | 1.09e-07 |
+| `struct+enc[three,risk_weighted] [hgb]` | 0.5997 | [0.5307, 0.6642] | 0.2394 | 0.700 |
+| `struct+enc[three,topk_risk] [hgb]` | 0.5866 | [0.5165, 0.6556] | 0.2180 | 0.810 |
+| `struct+enc[ftvol,risk_weighted] [hgb]` | 0.6040 | [0.5377, 0.6724] | 0.1848 | 0.324 |
+| `struct+enc[ftvol,topk_risk] [hgb]` | 0.6074 | [0.5385, 0.6773] | 0.1944 | 0.454 |
+| `EVERYTHING svd+enc[three]+chg [hgb]` | 0.6084 | [0.5421, 0.6732] | 0.2150 | 0.777 |
+| `EVERYTHING tfidf+enc[three]+chg [sparse]` | 0.5535 | [0.4764, 0.6231] | −0.0038 | 1.08e-07 |
 
 Neither `EVERYTHING` row carries topic exposures. No corrected-data condition anywhere in this
 repository fuses topic exposures with another feature block: no
 `filing_topic_vectors_*_fixed.parquet` exists for any encoder, so `topic_filings()` returns `None`
 and the topic block is never appended. This gap is left open deliberately and is not closed by the
-2026-08-11 run.
+2026-08-12 run.
 
 ### 5.5 Downstream — expanding-window backtest
 
@@ -474,14 +489,16 @@ performance breakdown is recorded.
 
 Environment: the `diss` conda environment (`environment.yml`, `requirements.txt`); FinMTEB runs in a
 separate `finmteb` environment. Seed 42 is set for contrastive training and for the TF-IDF→SVD
-projection. Determinism is not guaranteed end to end. An earlier re-run of the downstream grid
-reproduced the ridge and TF-IDF lanes exactly but moved the `structured [hgb]` tree-head lane from
-0.518 to 0.511. The 2026-08-11 re-run measured this more fully, by diffing against the preserved
-previous grid (`phase5/out/stress_grid_val2025_fixed.PREV.json`): every ridge and sparse lane
-reproduced to within 4e-5 IC, one (`struct+enc[sbert] [ridge]`) bit-identically, while the tree-head
-lanes moved by up to 0.018 IC (`struct+enc[dual] [hgb]`, 0.5823 → 0.6008) and the SVD-projected
-ridge lane by 0.011. Rows computed *before* the newly added encoder moved as much as rows computed
-after it, which rules out a shifted random stream and points instead to non-associative float
-reduction under a different thread count. The practical consequence: **differences of under ~0.02 IC
-between tree-head conditions in section 5.4 are not reproducible quantities and must not be
-interpreted.**
+projection. The downstream grid is reproducible, but only when both the thread count and the CPU are
+held fixed. `phase5/run_val2025.sh` therefore pins every thread pool to 1 and constrains the job to
+`damnii07`; run on that configuration, the grid reproduces bit-for-bit on IC and on both bootstrap
+CI bounds, and R²_log and the DM p-value agree to within 7.4e-06 and 5.0e-04 respectively.
+
+Relax either control and the tree-head lanes move by up to 0.018 IC, with the SVD-projected ridge
+lane moving 0.011 — enough to reorder encoders and to carry a DM p-value across a conventional
+threshold. The measurement behind this is in `phase5/run_control.sh` and
+`phase5/run_control_xnode.sh`; the diagnostic grids are not committed, but the two preserved
+comparison files are (`.PREV.json`, `.OPENCAST.json`). Seeds are not the issue — everything is
+seeded — and neither is thread count on its own, which is a 1e-04 effect. The dominant term is which
+CPU the job lands on, because OpenBLAS dispatches kernels on runtime capability and a different
+vector unit reduces floats in a different order.

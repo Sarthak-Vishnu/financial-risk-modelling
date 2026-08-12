@@ -272,13 +272,18 @@ head.
 | lagged [hgb] | 0.457 | — | −0.130 | — |
 | structured [hgb] | 0.558 | [0.487, 0.628] | 0.094 | 0.001 |
 | structured [ridge] | 0.591 | [0.522, 0.659] | 0.175 | 0.000 |
-| tfidf+lag [sparse] | 0.541 | — | 0.116 | — |
+| tfidf+lag [sparse] | 0.508 | [0.423, 0.583] | 0.069 | 0.000 |
 | **struct+tfidf [sparse]** | **0.603** | [0.534, 0.670] | **0.226** | reference |
 
 Three statements summarise this table. First, the structured baseline alone beats the entire
-original text-only pipeline: 0.591 against the TF-IDF-plus-lagged floor of 0.541. The standard
-quantitative characteristics rank firm volatility better than any text-only method, which
-retroactively explains why the original pipeline's comparisons were all fought below this level.
+original text-only pipeline: 0.591 against the TF-IDF-plus-lagged floor of 0.508, a gap of 0.083.
+The standard quantitative characteristics rank firm volatility better than any text-only method,
+which retroactively explains why the original pipeline's comparisons were all fought below this
+level. (Earlier drafts quoted this floor as 0.541, which is the same condition evaluated at a fixed
+sparse-ridge penalty of 10. The harness tunes that penalty on 2024 and selects 30, which costs
+0.033 IC on 2025; 0.508 is therefore the figure produced by the same tuned pipeline as every other
+row of this table, and the one anchored in `phase5/stress_grid.py`. The correction widens the gap
+rather than narrowing it.)
 Second, text on top of the structured baseline adds: struct+tfidf reaches 0.603 IC and raises
 R²_log from 0.175 to 0.226, and the Diebold-Mariano test says this accuracy gain is highly
 significant. Third, the IC increment (+0.012 on this single year) is inside the single-year
