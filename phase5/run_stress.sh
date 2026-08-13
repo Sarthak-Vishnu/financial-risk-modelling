@@ -19,6 +19,17 @@ cd /home/s2880814/financial-risk-modelling
 
 export PYTHONUNBUFFERED=1
 
+# Pin every thread pool to 1 — see the note in phase5/run_val2025.sh. NOTE: the backtest JSONs
+# currently on disk (stress_grid_backtest_*_fixed.json, 2026-07-03) were produced WITHOUT this
+# pinning, so a re-run of this script will not reproduce them exactly on the tree-head lanes. That
+# is pre-existing non-determinism being removed, not introduced; but it means the backtest outputs
+# must be regenerated as a set rather than compared row-by-row against the old ones.
+#
+# This script has no --nodelist, so its val-2025 pass can land on a node that does not reproduce
+# the committed grid. To regenerate the committed grid, use phase5/run_val2025.sh, not this.
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+       NUMEXPR_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1
+
 echo "=== E2: disclosure-change features ==="
 python dataset_config/build_change_features.py
 

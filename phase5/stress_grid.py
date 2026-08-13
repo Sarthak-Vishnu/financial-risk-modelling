@@ -18,9 +18,16 @@ Two modes:
       the structured baseline. 2013 start = 12 test years (the primary significance lens; the
       single-year val-2025 IC has a +-0.06 CI at n~400, so val deltas alone prove nothing).
 
-Anchors (P0-corrected panel, re-baselined 2026-07-02): struct[hgb] 0.558, tfidf+lag 0.541,
+Anchors (P0-corrected panel, re-baselined 2026-07-02): struct[hgb] 0.558, tfidf+lag 0.508,
 struct+tfidf 0.610. The PRE-fix numbers (0.570/0.545/0.611) are not comparable — they paired
 texts with the next filing's labels (see dataset_config/fix_filing_join.py).
+
+tfidf+lag was 0.541 until 2026-08-12. Both figures are correct for the corrected join and
+differ only in the sparse-ridge penalty: 0.541 is the fixed alpha=10 result, 0.508 is what this
+harness produces when alpha is tuned on 2024 over SPARSE_ALPHAS and selects 30. The anchor was
+therefore checking tuned output against a fixed-alpha reference and firing DRIFT on every run.
+STRESS_TEST_RESULTS.md records both side by side ("tfidf+lag 0.508 tuned vs 0.541 at fixed
+alpha=10"). 0.508 is the figure this code path actually computes, so it is the one anchored.
 
 Output: phase5/out/stress_grid_<mode>*.json + printed tables.
 Run:    python phase5/stress_grid.py --mode val2025
@@ -43,9 +50,9 @@ import eval_common as E  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 
 OUT_DIR = ROOT / "phase5" / "out"
-ENCODERS = ["dual", "sbert", "volaware", "three_lora", "ftvol", "bge"]
+ENCODERS = ["dual", "sbert", "volaware", "three", "three_lora", "ftvol", "bge"]
 SPARSE_ALPHAS = (3.0, 10.0, 30.0)
-ANCHORS = {"structured [hgb]": 0.558, "struct+tfidf [sparse]": 0.610, "tfidf+lag [sparse]": 0.541}
+ANCHORS = {"structured [hgb]": 0.558, "struct+tfidf [sparse]": 0.610, "tfidf+lag [sparse]": 0.508}
 
 
 def ic_of(yt, yp):

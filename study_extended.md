@@ -272,13 +272,18 @@ head.
 | lagged [hgb] | 0.457 | — | −0.130 | — |
 | structured [hgb] | 0.558 | [0.487, 0.628] | 0.094 | 0.001 |
 | structured [ridge] | 0.591 | [0.522, 0.659] | 0.175 | 0.000 |
-| tfidf+lag [sparse] | 0.541 | — | 0.116 | — |
+| tfidf+lag [sparse] | 0.508 | [0.428, 0.585] | 0.069 | 0.000 |
 | **struct+tfidf [sparse]** | **0.603** | [0.534, 0.670] | **0.226** | reference |
 
 Three statements summarise this table. First, the structured baseline alone beats the entire
-original text-only pipeline: 0.591 against the TF-IDF-plus-lagged floor of 0.541. The standard
-quantitative characteristics rank firm volatility better than any text-only method, which
-retroactively explains why the original pipeline's comparisons were all fought below this level.
+original text-only pipeline: 0.591 against the TF-IDF-plus-lagged floor of 0.508, a gap of 0.083.
+The standard quantitative characteristics rank firm volatility better than any text-only method,
+which retroactively explains why the original pipeline's comparisons were all fought below this
+level. (Earlier drafts quoted this floor as 0.541, which is the same condition evaluated at a fixed
+sparse-ridge penalty of 10. The harness tunes that penalty on 2024 and selects 30, which costs
+0.033 IC on 2025; 0.508 is therefore the figure produced by the same tuned pipeline as every other
+row of this table, and the one anchored in `phase5/stress_grid.py`. The correction widens the gap
+rather than narrowing it.)
 Second, text on top of the structured baseline adds: struct+tfidf reaches 0.603 IC and raises
 R²_log from 0.175 to 0.226, and the Diebold-Mariano test says this accuracy gain is highly
 significant. Third, the IC increment (+0.012 on this single year) is inside the single-year
@@ -292,8 +297,10 @@ Part I.3. The encoders are: `dual` and `sbert` (the original similarity-trained 
 and the off-the-shelf sentence transformer), `bge` (BAAI bge-base-en-v1.5, a modern strong
 general-purpose embedder, included to address the objection that the original encoders were
 simply not good enough), `volaware` (the Stage B contrastive encoder whose positive pairs are
-paragraphs from firms in the same within-year forward-volatility decile), and `ftvol` (an encoder
-fine-tuned end-to-end on the volatility regression target).
+paragraphs from firms in the same within-year forward-volatility decile), `three` and `three_lora`
+(the project's own three-view contrastive encoders of Part 0.4, adding the sector view under full
+fine-tuning and under LoRA respectively), and `ftvol` (an encoder fine-tuned end-to-end on the
+volatility regression target).
 
 | condition | IC | 95% CI | R²_log | DM p vs struct+tfidf |
 |---|---|---|---|---|
@@ -305,12 +312,16 @@ fine-tuned end-to-end on the volatility regression target).
 | struct+enc[bge] [hgb] | 0.584 | [0.512, 0.651] | 0.145 | 0.023 |
 | struct+enc[volaware] [ridge] | 0.587 | [0.514, 0.656] | 0.147 | 0.003 |
 | struct+enc[volaware] [hgb] | 0.597 | [0.530, 0.663] | 0.207 | 0.593 |
+| struct+enc[three] [ridge] | 0.564 | [0.489, 0.634] | 0.100 | 0.000 |
+| struct+enc[three] [hgb] | 0.600 | [0.532, 0.662] | 0.245 | 0.587 |
+| struct+enc[three_lora] [ridge] | 0.588 | [0.517, 0.659] | 0.145 | 0.001 |
+| struct+enc[three_lora] [hgb] | 0.596 | [0.527, 0.661] | 0.198 | 0.430 |
 | struct+enc[ftvol] [ridge] | 0.606 | [0.540, 0.672] | 0.185 | 0.207 |
 | struct+enc[ftvol] [hgb] | 0.598 | [0.529, 0.666] | 0.167 | 0.155 |
 | struct+enc[ftvol, topk_risk] [hgb] | 0.607 | [0.538, 0.677] | 0.194 | 0.454 |
 | struct+tfidf_svd [ridge] | 0.594 | [0.526, 0.661] | 0.167 | 0.000 |
-| EVERYTHING svd+enc[ftvol]+chg [hgb] | 0.608 | [0.542, 0.675] | 0.170 | 0.204 |
-| EVERYTHING tfidf+enc[ftvol]+chg [sparse] | 0.590 | [0.525, 0.662] | 0.165 | 0.135 |
+| EVERYTHING svd+enc[three]+chg [hgb] | 0.608 | [0.542, 0.673] | 0.215 | 0.777 |
+| EVERYTHING tfidf+enc[three]+chg [sparse] | 0.553 | [0.476, 0.623] | −0.004 | 0.000 |
 
 The pattern is clean. The generic semantic encoders (dual, sbert, bge) sit at or below the no-text
 structured baseline and are significantly less accurate than struct+tfidf under a Diebold-Mariano
@@ -319,10 +330,25 @@ embedder" objection: it loses too, even with the full text delivered through the
 protocol. The direction of this result has independent support: the FinMTEB benchmark reports that
 bag-of-words representations outperform dense embedding models on financial semantic-similarity
 tasks (Tang and Yang 2025), so count-based representations beating dense ones on financial text is a
-documented phenomenon, not an idiosyncrasy of this pipeline. The only encoders that reach statistical parity with the count model are the two that were
-trained on the volatility task itself, ftvol and volaware. Task alignment, not model modernity, is
-what closes the gap. None of the parity rows beats the reference, and the kitchen-sink fusion of
-every representation at once also fails to beat it. This grid also supersedes the original
+documented phenomenon, not an idiosyncrasy of this pipeline. Which encoders reach statistical
+parity with the count model depends on the head. Under the ridge head only ftvol does, at p = 0.207;
+every other encoder is significantly less accurate, both three-view variants included. Under the
+tree head the picture inverts, and the only two conditions that fail parity are sbert (p = 0.043)
+and bge (p = 0.023), the two off-the-shelf general-purpose embedders, with dual marginal at 0.051.
+volaware, three, three_lora and ftvol are all indistinguishable from the reference there. The line
+therefore runs along domain adaptation rather than along task alignment: an encoder that has been
+trained on this corpus reaches parity under a flexible head whether or not it ever saw the
+volatility label. One row leads the table on a single axis, and it is the project's own sector-view
+encoder — struct+enc[three] [hgb] posts the highest R²_log in the grid at 0.245, above the
+reference's 0.226, while its IC of 0.600 sits mid-pack. That is a level-accuracy gain rather than a
+ranking gain, and it is not accompanied by any IC advantage. None of the parity rows beats the
+reference on IC, and the kitchen-sink fusion of every representation at once does not either: under
+the sparse head it collapses to 0.553 IC with a negative R²_log, the worst text-carrying condition
+in the table. The encoder named inside the two EVERYTHING rows and inside the attention-pooling row
+is selected by maximising tree-head IC on the same validation rows the row is then scored on, so
+that identity is a within-sample artefact and carries no evidential weight; `three` takes it at
+0.600 against ftvol's 0.598, a margin of 0.002 inside a confidence interval roughly ±0.06 wide.
+This grid also supersedes the original
 pipeline's encoder comparison: task-supervised fine-tuning, which the original post-mortem
 speculated would have worked better, was built (following the precedent of end-to-end
 volatility-supervised text encoders in Qin and Yang 2019 and Yang et al. 2020), and it reaches
