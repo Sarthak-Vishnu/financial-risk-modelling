@@ -19,7 +19,7 @@ Output lands in `graphs/out/`. Copy the PDFs into `S2880814_MScDiss/images/`.
 | `fig1_window_spectrum.py` | **Figure 4.2**, §4.3.4 | Table A.1 (`tab:horizon`) |
 | `fig3_three_peaks.py` | **Figure 4.3**, §4.6.1 | Table A.1, plus the call-anchor and insider-conditioning window sweeps from the result logs |
 | `fig4_backtest_by_year.py` | **Figure 4.1**, §4.3.1 | Per-year backtest logs, checked against Table 4.3 |
-| `fig2_encoder_grid.py` | **not used** | Table 4.2 (`tab:encgrid`), reference lines from Table 4.1 |
+| `fig2_encoder_grid.py` | **not used** | `phase5/out/stress_grid_val2025_fixed.json`, read at run time |
 | `fig2_extra_delta_by_family.py` | **not used** | as above |
 
 Both fig2 variants were built and rejected: Table 4.2 was kept in the main text instead,
@@ -27,7 +27,25 @@ because the table carries `R^2_log` and the exact confidence intervals that a
 point-and-interval plot has no room for, and the chapter did not need a second exhibit
 making the same negative point. They are kept in the repository rather than deleted,
 since the argument for a figure there may come back if that table is ever demoted to the
-appendix. Neither is maintained against changes in the thesis.
+appendix.
+
+**Both now read the committed grid directly**, through `_grid.py`, rather than carrying
+transcribed literals. They used to carry literals from Table 4.2, and that is exactly how
+they went stale: the grid was regenerated on corrected data, gained four rows for the
+project's own three-view encoders, and two conditions changed name because the encoder
+they select is chosen within-sample. The figures kept plotting the superseded numbers and
+nothing flagged it. Reading the JSON means they cannot disagree with it, and it removes
+the dependence on a table this repository cannot see. The two references they draw — the
+defended model's IC and the single-year noise band — come from the same file, because
+`struct+tfidf [sparse]` is itself a row of the grid: the level is that row's IC and the
+band is that row's own bootstrap interval, so the band is the measured 0.068 rather than
+the rounded 0.06 the text quotes.
+
+What stays editorial in `_grid.py` is which conditions belong in a figure about encoders,
+and which family each encoder falls into. Neither is recorded in the run. A condition in
+the JSON that no rule covers raises rather than being skipped, so a new encoder entering
+`stress_grid.py` surfaces as a failure here instead of as a row quietly missing from a
+plot.
 
 `fig1_window_spectrum.py` replaced Table A.1 in the main text. That table moved to
 Appendix A, where it still carries the exact *p*-values and the validation-year column
@@ -35,10 +53,15 @@ the figure does not show.
 
 ## Where the numbers come from
 
-**Every number is an embedded literal.** Nothing is recomputed from the datasets, for one
-reason: a figure that recomputes can silently disagree with the table printed three pages
-earlier. Each script names its source in the docstring. If a table changes, change the
-constants too.
+**The three thesis figures carry embedded literals.** Nothing is recomputed from the
+datasets, for one reason: a figure that recomputes can silently disagree with the table
+printed three pages earlier. Each script names its source in the docstring. If a table
+changes, change the constants too.
+
+That reasoning does not extend to a result that is itself committed. The two fig2 variants
+read `phase5/out/stress_grid_val2025_fixed.json` at run time, because the grid is a
+tracked file rather than a number living only in the write-up, so there is a single source
+to agree with. The other three have no committed equivalent to read.
 
 `fig4_backtest_by_year.py` checks itself, because its twelve hand-copied values per lane
 are exactly the situation where a transcription slip goes unnoticed. It recomputes the

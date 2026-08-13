@@ -10,61 +10,43 @@
 """Figure 2 -- the encoder grid as a point-and-interval plot (thesis Section 4.2).
 
 Why a figure at all: the chapter's central negative claim is that nothing beats the
-count model, and it currently arrives as a fourteen-row table the reader has to scan
-and hold in memory. A reference line turns that into one glance.
+count model, and it currently arrives as a long table the reader has to scan and hold in
+memory. A reference line turns that into one glance.
 
-The intervals are the second reason. Section 4.1 states in prose that with n = 393 the
-interval spans roughly +/- 0.06, which is why single-year differences of 0.01 to 0.02
-can never be conclusive. Drawing the intervals shows it instead of asserting it: every
-bar straddles the reference line, so the plot makes the case for moving to multi-year
-paired tests before the reader reaches Section 4.3.
+The intervals are the second reason. Section 4.1 states in prose that the interval spans
+roughly +/- 0.06, which is why single-year differences of 0.01 to 0.02 can never be
+conclusive. Drawing the intervals shows it instead of asserting it: every bar straddles
+the reference line, so the plot makes the case for moving to multi-year paired tests
+before the reader reaches Section 4.3.
 
 Rows are sorted by IC, best at the top, so the reading is top-down.
 
-NUMBERS ARE EMBEDDED LITERALS, taken from Table 4.2 (tab:encgrid) of thesis.tex, with
-the two reference lines from Table 4.1 (tab:anchor). They are not recomputed here.
-R^2_log is deliberately not drawn: it is a third axis the plot has no room for, and it
-survives in the appendix version of the table.
+NUMBERS ARE READ FROM THE COMMITTED GRID at phase5/out/stress_grid_val2025_fixed.json,
+through graphs/_grid.py, and are not literals here. They were literals transcribed from
+the write-up until the grid became a committed artefact; that is what let this figure
+drift out of step with it. Which conditions belong in an encoder figure is still an
+editorial choice and still lives in _grid.py, where an uncovered condition raises rather
+than vanishing from the plot. R^2_log is deliberately not drawn: it is a third axis the
+plot has no room for, and it survives in the appendix version of the table.
 """
 
 import matplotlib.pyplot as plt
 
+from _grid import REFERENCE, STRUCTURED, encoder_conditions, load_grid
 from _style import C, TEXTWIDTH_IN, apply_style, save
-
-# ---- Table 4.2 (tab:encgrid): condition, IC, CI low, CI high, DM p ----------
-GRID = [
-    ("struct+enc[dual] [ridge]",                  0.582, 0.509, 0.652, 0.013),
-    ("struct+enc[dual] [hgb]",                    0.582, 0.511, 0.651, 0.051),
-    ("struct+enc[sbert] [ridge]",                 0.562, 0.482, 0.636, 0.000),
-    ("struct+enc[sbert] [hgb]",                   0.591, 0.521, 0.658, 0.043),
-    ("struct+enc[bge] [ridge]",                   0.580, 0.506, 0.649, 0.000),
-    ("struct+enc[bge] [hgb]",                     0.584, 0.512, 0.651, 0.023),
-    ("struct+enc[volaware] [ridge]",              0.587, 0.514, 0.656, 0.003),
-    ("struct+enc[volaware] [hgb]",                0.597, 0.530, 0.663, 0.593),
-    ("struct+enc[ftvol] [ridge]",                 0.606, 0.540, 0.672, 0.207),
-    ("struct+enc[ftvol] [hgb]",                   0.598, 0.529, 0.666, 0.155),
-    ("struct+enc[ftvol, topk_risk] [hgb]",        0.607, 0.538, 0.677, 0.454),
-    ("struct+tfidf_svd [ridge]",                  0.594, 0.526, 0.661, 0.000),
-    ("EVERYTHING svd+enc[ftvol]+chg [hgb]",       0.608, 0.542, 0.675, 0.204),
-    ("EVERYTHING tfidf+enc[ftvol]+chg [sparse]",  0.590, 0.525, 0.662, 0.135),
-]
-
-# ---- Table 4.1 (tab:anchor): the two reference levels -----------------------
-REF_DEFENDED = ("struct+tfidf [sparse]", 0.603)
-REF_STRUCTURED = ("structured [ridge]", 0.591)
 
 ALPHA = 0.05
 
-# The 'struct+' prefix is on ten of fourteen rows and carries no information.
-# Set False to print the condition names exactly as Table 4.2 does.
+# The 'struct+' prefix is on most rows and carries no information.
+# Set False to print the condition names exactly as the grid records them.
 SHORT_LABELS = True
 
 # Diagonal y-labels were tried at 25 degrees and made this figure worse, so the default
 # is back to horizontal. The reason is geometry rather than taste: the longest label is
 # about 3.2in of text, and rotating it by 25 degrees drops its far end 1.3in below its
-# own tick, which is roughly four row heights at fourteen rows. Every label then visually
-# spans four rows and the reader cannot tell which row it belongs to. Tilting pays only
-# when labels are short or rows are tall, and here neither holds. Set to 25 to see it.
+# own tick, which is roughly four row heights. Every label then visually spans four rows
+# and the reader cannot tell which row it belongs to. Tilting pays only when labels are
+# short or rows are tall, and here neither holds. Set to 25 to see it.
 LABEL_ROTATION = 0
 
 
@@ -76,41 +58,50 @@ def label_for(name):
 
 def main():
     apply_style()
-    rows = sorted(GRID, key=lambda r: r[1])          # ascending, so best ends on top
+
+    grid = load_grid()
+    rows = sorted(encoder_conditions(grid), key=lambda r: r["ic"])  # best ends on top
+    ref_ic = grid[REFERENCE]["ic"]
+    base_ic = grid[STRUCTURED]["ic"]
     y = range(len(rows))
 
-    fig, ax = plt.subplots(figsize=(TEXTWIDTH_IN, 5.4))
+    # Height tracks the row count so the row pitch stays constant however many
+    # conditions the grid carries. 0.245in per row plus fixed furniture reproduces the
+    # pitch this figure was tuned at.
+    height = 2.0 + 0.245 * len(rows)
+    fig, ax = plt.subplots(figsize=(TEXTWIDTH_IN, height))
 
-    for i, (name, ic, lo, hi, dm) in zip(y, rows):
-        worse = dm < ALPHA
+    for i, r in zip(y, rows):
+        # dm_p is None only for the reference row, which _grid.py excludes.
+        worse = r["dm_p"] is not None and r["dm_p"] < ALPHA
         colour = C["vermillion"] if worse else C["blue"]
-        ax.plot([lo, hi], [i, i], color=colour, linewidth=1.8, solid_capstyle="butt",
-                zorder=2)
-        ax.scatter([ic], [i], s=80, zorder=3, color=colour,
+        ax.plot([r["ci_lo"], r["ci_hi"]], [i, i], color=colour, linewidth=1.8,
+                solid_capstyle="butt", zorder=2)
+        ax.scatter([r["ic"]], [i], s=80, zorder=3, color=colour,
                    facecolors=colour if worse else "white",
                    edgecolors=colour, linewidths=1.8)
 
-    ax.axvline(REF_DEFENDED[1], color=C["blue"], linestyle="--", linewidth=1.6,
-               zorder=1)
-    ax.axvline(REF_STRUCTURED[1], color=C["grey"], linestyle=":", linewidth=1.6,
-               zorder=1)
+    ax.axvline(ref_ic, color=C["blue"], linestyle="--", linewidth=1.6, zorder=1)
+    ax.axvline(base_ic, color=C["grey"], linestyle=":", linewidth=1.6, zorder=1)
 
     ax.set_yticks(list(y))
-    ax.set_yticklabels([label_for(r[0]) for r in rows],
+    ax.set_yticklabels([label_for(r["name"]) for r in rows],
                        fontfamily="monospace", fontsize=10,
                        rotation=LABEL_ROTATION, ha="right", va="center",
                        rotation_mode="anchor")
     ax.set_ylim(-0.7, len(rows) - 0.3)
     ax.set_xlabel("Information coefficient (2025 validation year)")
-    ax.set_xlim(0.46, 0.70)
+    lo = min(min(r["ci_lo"] for r in rows), base_ic, ref_ic)
+    hi = max(max(r["ci_hi"] for r in rows), base_ic, ref_ic)
+    ax.set_xlim(lo - 0.02, hi + 0.02)
     ax.grid(axis="y", visible=False)
 
     # Reference lines named ABOVE the axes, at two heights so the two labels cannot
-    # collide: the lines they mark are only 0.012 apart.
+    # collide: the lines they mark are only about 0.012 apart.
     xt = ax.get_xaxis_transform()
-    ax.text(REF_STRUCTURED[1], 1.11, REF_STRUCTURED[0], transform=xt, color=C["grey"],
+    ax.text(base_ic, 1.11, STRUCTURED, transform=xt, color=C["grey"],
             fontsize=10.5, ha="center", va="bottom", fontfamily="monospace")
-    ax.text(REF_DEFENDED[1], 1.02, REF_DEFENDED[0], transform=xt, color=C["blue"],
+    ax.text(ref_ic, 1.02, REFERENCE, transform=xt, color=C["blue"],
             fontsize=10.5, ha="center", va="bottom", fontfamily="monospace")
 
     handles = [
@@ -122,7 +113,11 @@ def main():
                    markeredgewidth=1.8, color=C["blue"],
                    label="tie: not separable from the reference"),
     ]
-    ax.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, -0.32), ncol=1)
+    # bbox_to_anchor is in axes fractions, so a fixed -0.32 would move the legend further
+    # from the axes in inches as the figure grows. Scale it to hold the gap constant at
+    # what -0.32 gave on the 5.4in canvas this was tuned on.
+    ax.legend(handles=handles, loc="lower left",
+              bbox_to_anchor=(0.0, -0.32 * 5.4 / height), ncol=1)
 
     save(fig, "fig2_encoder_grid", exact_width=False)
 
