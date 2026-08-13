@@ -272,7 +272,7 @@ head.
 | lagged [hgb] | 0.457 | — | −0.130 | — |
 | structured [hgb] | 0.558 | [0.487, 0.628] | 0.094 | 0.001 |
 | structured [ridge] | 0.591 | [0.522, 0.659] | 0.175 | 0.000 |
-| tfidf+lag [sparse] | 0.508 | [0.423, 0.583] | 0.069 | 0.000 |
+| tfidf+lag [sparse] | 0.508 | [0.428, 0.585] | 0.069 | 0.000 |
 | **struct+tfidf [sparse]** | **0.603** | [0.534, 0.670] | **0.226** | reference |
 
 Three statements summarise this table. First, the structured baseline alone beats the entire
