@@ -62,7 +62,7 @@ SERIES = {
 STYLE = {
     "struct+tfidf [sparse]": (C["blue"], "o"),
     "structured [ridge]":    (C["vermillion"], "s"),
-    "lagged [hgb]":          (C["grey"], "^"),
+    "lagged [hgb]":          (C["green"], "^"),
 }
 
 # ---- Table 4.3 (tab:backtest): (2018-2024 IC, t), (2013-2024 IC, t) ----------
@@ -122,9 +122,16 @@ def main():
 
     ax.axvspan(REGIME_YEAR - 0.5, REGIME_YEAR + 0.5, color=C["faint"], alpha=0.35,
                zorder=0, linewidth=0)
-    for lane, values in populated.items():
+    # The defended model is drawn last so it sits above the other two wherever the
+    # three cross, which is most of the panel.
+    order = ["lagged [hgb]", "structured [ridge]", "struct+tfidf [sparse]"]
+    for z, lane in enumerate(k for k in order if k in populated):
         colour, marker = STYLE.get(lane, (C["green"], "D"))
-        ax.plot(YEARS, values, marker=marker, color=colour, label=lane, zorder=2)
+        ax.plot(YEARS, populated[lane], marker=marker, color=colour, label=lane,
+                zorder=2 + z)
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], labels[::-1], loc="lower left", handletextpad=0.4,
+              borderpad=0.3, labelspacing=0.3, borderaxespad=0.4)
 
     ax.set_xlabel("Test year")
     ax.set_ylabel("Information coefficient")
@@ -132,8 +139,6 @@ def main():
     ax.set_xticklabels([str(y) for y in YEARS], rotation=45, ha="right")
     # A narrow panel has no interior space that the series do not cross, so the
     # legend goes under the axes there rather than on top of the data.
-    ax.legend(loc="lower left", ncol=1, handletextpad=0.4, borderpad=0.3,
-              labelspacing=0.3, borderaxespad=0.4)
     save(fig, NAME)
 
 
