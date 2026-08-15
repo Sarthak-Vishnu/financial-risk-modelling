@@ -33,6 +33,13 @@ import matplotlib.pyplot as plt
 
 from _style import C, TEXTWIDTH_IN, apply_style, save
 
+# Set to a fraction of the text width to render for a side-by-side layout.
+# Regenerating at the target width is not the same as scaling the full-width
+# file down in LaTeX: scaling shrinks the fonts with everything else, whereas
+# this lays the axis out for the box it will sit in.
+WIDTH_IN = TEXTWIDTH_IN
+NAME = "fig4_backtest_by_year"
+
 YEARS = list(range(2013, 2025))          # 2013 to 2024 inclusive
 
 # ---- Per-year IC, from the backtest logs. One value per year in YEARS. ------
@@ -98,7 +105,8 @@ def main():
         check_against_table_43(lane, values)
 
     apply_style()
-    fig, ax = plt.subplots(figsize=(TEXTWIDTH_IN, 3.9), layout="constrained")
+    fig, ax = plt.subplots(figsize=(WIDTH_IN, 3.9 * min(1.0, WIDTH_IN / TEXTWIDTH_IN) + 1.7),
+                           layout="constrained")
 
     ax.axvspan(REGIME_YEAR - 0.5, REGIME_YEAR + 0.5, color=C["faint"], alpha=0.35,
                zorder=0, linewidth=0)
@@ -110,8 +118,14 @@ def main():
     ax.set_ylabel("Information coefficient")
     ax.set_xticks(YEARS)
     ax.set_xticklabels([str(y) for y in YEARS], rotation=45, ha="right")
-    ax.legend(loc="lower left", ncol=1)
-    save(fig, "fig4_backtest_by_year")
+    # A narrow panel has no interior space that the series do not cross, so the
+    # legend goes under the axes there rather than on top of the data.
+    if WIDTH_IN < 0.8 * TEXTWIDTH_IN:
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.28), ncol=1,
+                  handletextpad=0.4)
+    else:
+        ax.legend(loc="lower left", ncol=1)
+    save(fig, NAME)
 
 
 if __name__ == "__main__":
