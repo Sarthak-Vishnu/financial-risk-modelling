@@ -39,6 +39,11 @@ from _style import C, TEXTWIDTH_IN, apply_style, save
 # this lays the axis out for the box it will sit in.
 WIDTH_IN = TEXTWIDTH_IN
 NAME = "fig4_backtest_by_year"
+# Fonts are set for a full-width figure. In a half-width panel the same point sizes
+# are oversized relative to the axes, so scale them down and the legend further still,
+# which is what lets it sit inside the plot under the curve rather than below it.
+FONT_SCALE = 1.0
+LEGEND_SCALE = 1.0
 
 YEARS = list(range(2013, 2025))          # 2013 to 2024 inclusive
 
@@ -105,7 +110,14 @@ def main():
         check_against_table_43(lane, values)
 
     apply_style()
-    fig, ax = plt.subplots(figsize=(WIDTH_IN, 3.9 * min(1.0, WIDTH_IN / TEXTWIDTH_IN) + 1.7),
+    if FONT_SCALE != 1.0:
+        import matplotlib as mpl
+        for k in ("font.size", "axes.labelsize", "xtick.labelsize",
+                  "ytick.labelsize", "legend.fontsize"):
+            mpl.rcParams[k] = mpl.rcParams[k] * FONT_SCALE
+        mpl.rcParams["legend.fontsize"] *= LEGEND_SCALE
+        mpl.rcParams["lines.markersize"] *= FONT_SCALE
+    fig, ax = plt.subplots(figsize=(WIDTH_IN, 3.9 * min(1.0, WIDTH_IN / TEXTWIDTH_IN) + 0.9),
                            layout="constrained")
 
     ax.axvspan(REGIME_YEAR - 0.5, REGIME_YEAR + 0.5, color=C["faint"], alpha=0.35,
@@ -120,11 +132,8 @@ def main():
     ax.set_xticklabels([str(y) for y in YEARS], rotation=45, ha="right")
     # A narrow panel has no interior space that the series do not cross, so the
     # legend goes under the axes there rather than on top of the data.
-    if WIDTH_IN < 0.8 * TEXTWIDTH_IN:
-        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.28), ncol=1,
-                  handletextpad=0.4)
-    else:
-        ax.legend(loc="lower left", ncol=1)
+    ax.legend(loc="lower left", ncol=1, handletextpad=0.4, borderpad=0.3,
+              labelspacing=0.3, borderaxespad=0.4)
     save(fig, NAME)
 
 
