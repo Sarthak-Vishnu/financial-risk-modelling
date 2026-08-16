@@ -34,6 +34,46 @@ learned/multimodal model beat it? All numbers below are on the **P0-corrected pa
 
 (n≈393 ⇒ single-year IC has ±0.06 CI; val-2025 deltas are indicative only.)
 
+### Sparse-ridge penalty provenance — read this before comparing any two sparse rows
+
+Two ranges above (`0.541` beside `0.508`, and `0.603–0.610`) are the same condition measured under
+two different penalties. Neither is an error, and neither should be reconciled by changing a
+number.
+
+`E.TextNumericRidge` takes `alpha=10.0` as its **class default**. Whether a lane is tuned depends
+entirely on how it is constructed:
+
+| path | penalty | why |
+|---|---|---|
+| `stress_grid.py --mode val2025`, via `fit_sparse(..., tune=True)` | **tuned** over `SPARSE_ALPHAS = (3.0, 10.0, 30.0)`, selected on 2024; picks **30** | the fair grid tunes every head it can |
+| `stress_grid.py --mode backtest`, the `conds` dict in `run_backtest` | **fixed α=10** | constructs `TextNumericRidge` directly; `fit_sparse` is never called and `SPARSE_ALPHAS` is never consulted |
+| `run_horizon.py`, `run_fusion.py`, `call_filing_gate.py` | **fixed α=10** | same — direct construction |
+
+So the two ranges resolve as:
+
+- **`tfidf+lag [sparse]`: 0.541 fixed vs 0.508 tuned on val-2025.** The tuned figure is the one the
+  fair grid reports, and the one the write-up quotes. Tuning *hurt* here, which is finding 3 above.
+- **`struct+tfidf [sparse]`: 0.610 fixed vs 0.603 tuned on val-2025.** The 0.610 is what
+  `run_horizon.py` reports as its H=30 anchor, because run_horizon constructs the head directly and
+  therefore inherits α=10. The **0.603 is the one to publish**: every other row in the val-2025 grid
+  and every DM p-value in it is computed against that prediction vector, so quoting 0.610 beside
+  them would compare a tuned grid to a fixed-α row. Preferring 0.610 would also mean selecting on
+  the evaluation year, and the ordering reverses on R²_log anyway (α=10 gives 0.2197, α=30 gives
+  0.2260), so it is not simply the better model. 0.610 is correct inside run_horizon's own
+  internally consistent α=10 world and should not be changed there.
+
+**Backtest rows are uniformly fixed α=10 on every sparse lane** — `tfidf+lag`, `struct+tfidf` and
+`struct+tfidf+change` alike. Every paired ΔIC in the backtest tables therefore compares like with
+like, and none of them is contaminated. The residue is cross-table only: the same condition name
+denotes a tuned model in the val-2025 grid and a fixed-α model in the backtest tables.
+
+**On leaving the value implicit.** α=10 is inherited from the class default rather than passed at
+these call sites, and that is deliberate. Making it explicit would change no behaviour, and it
+would break the byte-identity of `stress_grid.py` against the version that produced the committed
+`out/stress_grid_val2025_fixed.json` — which is the strongest provenance claim the grid has. This
+note exists so that nobody later "fixes" the apparent inconsistency by adding tuning to the
+backtest lanes: doing so would silently invalidate every published backtest comparison.
+
 ## E3 — backtests (primary lens)
 
 | condition | 2018–2024 IC (t) | 2013–2024 IC (t) |

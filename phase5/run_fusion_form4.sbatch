@@ -15,6 +15,13 @@ conda activate diss
 
 cd "$SLURM_SUBMIT_DIR"
 
+# Pin every thread pool to 1 — see the note in phase5/run_val2025.sh. The tree-head lanes here
+# (structured [hgb], struct+calls [hgb], struct+form4 [hgb]) are the ones that move without it;
+# the ridge and sparse lanes are stable either way. Without pinning, a re-run can land ~0.007 IC
+# away from the Stage C/E tables in this repository while reaching the same verdict.
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+       NUMEXPR_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1
+
 echo "==================== build_form4_features ===================="
 python dataset_config/build_form4_features.py
 
