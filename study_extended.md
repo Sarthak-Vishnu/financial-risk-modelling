@@ -395,7 +395,8 @@ Paired across years against the fair structured [ridge] baseline, struct+tfidf a
 (p = 0.098) on the seven-year window and +0.011 IC (p = 0.057) on the twelve-year window. The text
 increment is small, positive in sign in both windows and in most individual years, and just short
 of the conventional significance threshold on twelve years of data. The structured baseline's own
-superiority over pure persistence is unambiguous (+0.059 IC over lagged, p = 0.007). This is the
+superiority over pure persistence is unambiguous (+0.078 IC over lagged [hgb] on the twelve-year
+window, p = 0.001). This is the
 honest shape of the headline result: a strong structured baseline, plus a small, consistent,
 statistically suggestive lexical text increment, with a much clearer text advantage on level
 accuracy than on ranking.

@@ -93,7 +93,10 @@ def main():
               "(showing lagged/text-only conditions).")
 
     # ---------- (1) leakage-free backtest: cross-sectional IC ----------
-    print("\n=== (1) BACKTEST 2018-2024 — cross-sectional IC (leakage-free families) ===")
+    # Header follows RISK_TEST_START. It used to be hardcoded to "2018-2024", which is how a
+    # twelve-year run sat unread on disk under a seven-year heading.
+    print(f"\n=== (1) BACKTEST {E.TEST_YEARS[0]}-{E.TEST_YEARS[-1]} — cross-sectional IC "
+          f"(leakage-free families) ===")
     print(f"{'condition':22s} {'mean_IC':>8s} {'IC_t':>6s} {'CS_R2':>7s} {'dIC vs struct':>13s} {'p':>7s}")
     bt = {}
     # dense HGB conditions

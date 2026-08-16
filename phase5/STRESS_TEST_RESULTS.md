@@ -64,9 +64,32 @@ struct+tfidf on both windows (−0.011 p=0.37 / −0.007 p=0.28 paired) and stru
 structured. Disclosure-change features — lexical or semantic — add no incremental volatility
 signal over the level TF-IDF representation. The Lazy-Prices-extension branch is null.
 
+The struct+change row's own paired test against structured [hgb], from `paired_vs_structured` in
+the two backtest JSONs (previously quoted as a difference of means with no p-value):
+
+| lane | 7-yr ΔIC | p | 12-yr ΔIC | p |
+|---|---|---|---|---|
+| struct+change [hgb] vs structured [hgb] | −0.0197 | 0.2302 | −0.0094 | 0.3369 |
+
+Negative on both windows, neither significant — the same verdict the ΔIC alone implied, now with
+the test behind it.
+
 vs the weaker structured [hgb]: struct+tfidf +0.050 (p=0.114) 7-yr / +0.030 (p=0.113) 12-yr —
 the old-style comparison, kept for reference. structured [hgb] vs lagged: +0.059 (p=0.007) 12-yr —
 the strong-baseline claim is solid.
+
+Baseline-vs-persistence, both heads (paired across years, recomputed from the stored per-year ICs
+in `out/stress_grid_backtest_{2018,2013}_fixed.json`). The write-up defends **structured [ridge]**,
+so that is the row it quotes; the [hgb] row above is the same comparison on the weaker head and is
+kept only because the JSON's `paired_vs_structured` block is keyed on it:
+
+| baseline vs lagged [hgb] | 7-yr ΔIC | p | 12-yr ΔIC | p |
+|---|---|---|---|---|
+| structured [ridge] | +0.0891 | 0.0177 | **+0.0776** | **0.0009** |
+| structured [hgb] | +0.0549 | 0.1118 | +0.0586 | 0.0074 |
+
+Note the seven-year [hgb] cell is *not* significant (p=0.112); only the twelve-year one is. Quoting
++0.059 with p=0.007 therefore pins the window to twelve years as well as the head to [hgb].
 
 ## E1 — val-2025 fair grid (encoder rows pending GPU encode)
 
@@ -196,10 +219,19 @@ filings covered on the single-source build (the run printed 6,859 pre-cleanup; t
 2026 filings, which never enter training or evaluation, so all metrics are unaffected); paired
 across-year test vs the same-head counterpart):**
 
-| lane | mean IC | paired dIC | p |
-|---|---|---|---|
-| struct+calls [hgb] vs structured [hgb] | 0.515 vs 0.518 | −0.004 | 0.395 |
-| struct+tfidf+calls [ridge] vs struct+tfidf [ridge] | 0.561 vs 0.561 | −0.001 | 0.436 |
+| lane | window | mean IC | paired dIC | p |
+|---|---|---|---|---|
+| struct+calls [hgb] vs structured [hgb] | 2018–2024 | 0.515 vs 0.518 | −0.004 | 0.395 |
+| struct+tfidf+calls [ridge] vs struct+tfidf [ridge] | 2018–2024 | 0.561 vs 0.561 | −0.001 | 0.436 |
+| struct+calls [hgb] vs structured [hgb] | 2013–2024 | 0.588 vs 0.589 | −0.001 | 0.698 |
+| struct+tfidf+calls [ridge] vs struct+tfidf [ridge] | 2013–2024 | 0.613 vs 0.614 | −0.000 | 0.515 |
+
+The twelve-year rows are transcribed from `logs/run_fusion_form4.log:93-95`. `run_fusion.py` emits
+the call lanes unconditionally, so the `RISK_TEST_START=2013` pass in the Stage E job produced them
+as a side effect; they were never read at the time because `run_fusion.py` printed a hardcoded
+"BACKTEST 2018-2024" header over the twelve-year section (since fixed). The dIC column is the
+paired across-year mean, which is why it does not always equal the difference of the two rounded
+means beside it.
 
 val-2025 rows agree: struct+calls 0.559 (vs 0.556), struct+tfidf+calls 0.611 (vs 0.610) — noise.
 
@@ -212,8 +244,11 @@ realised-vol windows spanning the post-call period, so whatever tone predicted h
 realised into prices. Stage C therefore closes as a **horizon-contrast finding**: management tone
 carries volatility information at the call horizon, and the conditions under which it stops adding
 value are precisely the ones the 10-K prediction task imposes (a later anchor with fresher
-structured information). 12-yr window run skipped — the 7-yr null is flat (p≈0.4) and a wider
-window can only re-confirm it.
+structured information). The null holds on **both** backtest windows: −0.004 (p=0.395) and −0.001
+(p=0.436) over 2018–2024, −0.001 (p=0.698) and −0.000 (p=0.515) over 2013–2024. Calls therefore sit
+on the same two-window footing as Stage E's Form 4 lanes, and coverage was never the constraint —
+tone matches ≥96.5% of panel rows in every year 2013–2024, falling off only before 2013 (2011
+82.0%, 2010 87.9%, 2007 34.9%), and those years enter training only.
 
 ## Stage E — Form 4 insider features × risk text (2026-07-19, complete)
 
