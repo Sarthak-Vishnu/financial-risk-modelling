@@ -1,8 +1,9 @@
-# CAPTION: The earnings-call tone increment over the structured model across the eight
-# measurement windows. The filing anchor is flat at every window. The call anchor rises to
-# a peak at ten days and falls away either side, which is the contrast the section turns on.
-# The hollow markers at sixty and ninety days rest on 139 filings over six quarters rather
-# than the 152 over seven behind the filled markers.
+# CAPTION: The change in IC from adding earnings-call tone to the structured model, at each
+# of the eight measurement windows and at both anchors. Hollow markers rest on 139 filings
+# across six quarters rather than the 152 across seven behind the filled markers.
+#
+# Captions stay descriptive: what the figure shows, what the notation means, and anything
+# needed to read it. The finding it supports belongs in the prose beside it, not here.
 """Figure 5 -- the call-tone window sweep, as a panel beside its anchor table.
 
 Why a figure rather than the eight-column table it replaces: the point of these two
