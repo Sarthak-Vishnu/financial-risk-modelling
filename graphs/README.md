@@ -12,20 +12,18 @@ python fig4_backtest_by_year.py
 
 Output lands in `graphs/out/`. Copy the PDFs into `S2880814_MScDiss/images/`.
 
-**Two figures in the thesis are not produced by those defaults.** Figures 4.1 and 4.3 sit
-beside a table in a shared float, so they are rendered at part of the text width with their
-fonts scaled for the smaller box. Running the scripts plainly gives full-width versions
-instead, which is not what the document includes. Reproduce the thesis versions with:
+**Rendering at a narrower width.** `fig4_backtest_by_year.py` and `fig5_call_windows.py`
+take a width and a font scale, for when the figure has to sit in a narrower column than
+the default. Regenerating at the target width is not the same as scaling the output down
+afterwards: scaling shrinks the fonts with everything else, whereas this lays the axis out
+for the size it will be shown at.
 
 ```bash
 python -c "import fig4_backtest_by_year as f, _style;   f.WIDTH_IN=_style.TEXTWIDTH_IN*0.51; f.FONT_SCALE=0.72; f.LEGEND_SCALE=0.80;   f.NAME='fig4_backtest_by_year_narrow'; f.main()"
-
-python -c "import fig5_call_windows as f, _style;   f.WIDTH_IN=_style.TEXTWIDTH_IN*0.45; f.FONT_SCALE=0.68; f.LEGEND_SCALE=0.78; f.main()"
 ```
 
-The width fractions must match the `minipage` widths in `thesis.tex`, currently 0.51 and
-0.45. Change one without the other and the figure is scaled at inclusion, which is the
-font-size bug described further down.
+Running either script plainly gives the full-width version, which is the default and what
+you want unless you are placing it in a narrow column.
 
 ## What is in the thesis, and what is not
 
