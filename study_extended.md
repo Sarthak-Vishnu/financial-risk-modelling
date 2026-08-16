@@ -602,8 +602,11 @@ combination, so incremental tests must be run inside the full model.
 The second step became possible when the full transcript history was obtained (39,501 unique
 transcripts from a single corpus, covering 2006 to early 2025), allowing the pre-registered
 filing-level test at full scale. Tone features were attached to each filing from the most recent
-call strictly preceding the filing date (a leakage-free construction; 88.3 percent of the panel
-matched, at least 95 percent in every backtest year). Two independent evaluations were run. Within the 2025 validation
+call strictly preceding the filing date (a leakage-free construction; 6,859 of the 7,367 panel
+filings matched, 93.1 percent, and at least 95 percent in every backtest year of either window.
+The lower 88.3 percent quoted for the feature table as a whole is over all 8,105 filings it
+covers, which extends into 2026 — past the end of the transcript corpus, so those rows match at
+zero and are never evaluated). Two independent evaluations were run. Within the 2025 validation
 cross-section, a five-fold cross-validated comparison with identical folds and identical heads
 per pair found every tone increment flat or negative (for example, minus 0.017 IC under the HGB
 head on the full panel; every confidence interval straddles zero, and the one significant
