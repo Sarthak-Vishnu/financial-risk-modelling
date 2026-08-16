@@ -607,10 +607,11 @@ matched, at least 95 percent in every backtest year). Two independent evaluation
 cross-section, a five-fold cross-validated comparison with identical folds and identical heads
 per pair found every tone increment flat or negative (for example, minus 0.017 IC under the HGB
 head on the full panel; every confidence interval straddles zero, and the one significant
-accuracy test favours the model without tone). Across the 2018 to 2024 expanding-window backtest,
-where the historical coverage makes calls a fully backtestable family, structured plus tone
-matches structured alone (0.515 against 0.518, paired p = 0.395) and the full model with tone
-matches it without (0.561 against 0.561, p = 0.436).
+accuracy test favours the model without tone). Across the expanding-window backtest, where the
+historical coverage makes calls a fully backtestable family, structured plus tone matches
+structured alone (0.515 against 0.518, paired p = 0.395 over 2018 to 2024; 0.588 against 0.589,
+p = 0.698 over 2013 to 2024) and the full model with tone matches it without (0.561 against 0.561,
+p = 0.436; 0.613 against 0.614, p = 0.515).
 
 A natural objection to the second result is that its null might be an artifact of the thirty-day
 label, the tone signal being real but living at a horizon the study does not measure. The horizon
@@ -676,7 +677,7 @@ from 180 to 3 days before each filing date; the three-day margin covers Form 4's
 disclosure deadline, statutory since Sarbanes-Oxley §403 (codified at 15 U.S.C. §78p(a)(2)(C)),
 so every feature is public at prediction time. Matching is by CIK with a
 ticker fallback. Coverage is effectively complete — every panel filing falls inside the Form 4
-universe, in every year from 2006 — so, unlike the calls family, these lanes are valid over both
+universe, in every year from 2006 — so, as with the calls family, these lanes are valid over both
 backtest windows. One construct-validity observation from the build: median abnormal intensity is
 mildly negative in every year, which is the pre-filing blackout period made visible in the data —
 insiders trade less immediately before a 10-K than in their own trailing baseline. This is the
@@ -766,8 +767,8 @@ measured on it.
 | | earnings calls (Part V) | insider trading (Part VI) |
 |---|---|---|
 | coverage | 6,859 of 7,367 filings, 2006–2025 | 7,367 of 7,367, 2006–2026 |
-| backtestable windows | seven-year only | seven- and twelve-year |
-| level effect | null at the filing anchor, at all eight horizons | null on all four arms, both windows |
+| backtestable windows | seven- and twelve-year | seven- and twelve-year |
+| level effect | null at the filing anchor, at all eight horizons and on both windows | null on all four arms, both windows |
 | conditional or anchored effect | +0.039 IC at the call anchor, n = 152 | +0.030 disagreement conditioning |
 | relation to the 10-K text | substitute: nothing added on top of TF-IDF at any horizon | complement: conditions where the TF-IDF increment is earned |
 
@@ -788,10 +789,10 @@ passes: were the mechanism simply that more text signal is better, all three wou
 They do not.
 
 One asymmetry should be stated rather than smoothed over, because the two extensions are not
-equally credentialled. The Form 4 result rests on seven backtest years at complete coverage; the
+equally credentialled. The Form 4 result rests on both backtest windows at complete coverage; the
 call-anchored result rests on 152 filings in a single 2025 regime, and its horizon curve is
 correspondingly jagged. The well-powered calls finding is the *filing-anchor null* — 6,859 filings
-across seven years and eight horizons, null throughout — and it is that null, not the
+across both windows and eight horizons, null throughout — and it is that null, not the
 call-anchored hump, that stands beside the Form 4 conditioning result as evidence.
 
 ---
@@ -826,7 +827,7 @@ conditions extending to the training provenance of the encoders themselves.
    prediction, and the returns-versus-volatility contrast with Lazy Prices explains why not.
 5. **A horizon-contrast finding for a second text modality.** Earnings-call tone predicts
    volatility at the call anchor (+0.039 IC over structured in combination) yet adds nothing at
-   the filing anchor, in 2025 and across seven backtest years. The plausible reading is that the
+   the filing anchor, in 2025 and across both backtest windows. The plausible reading is that the
    signal is absorbed into the structured features during the call-to-filing gap, which
    identifies when an additional text source is worth attaching: only while its information has
    not yet been impounded into cheaper, fresher predictors.
@@ -882,8 +883,8 @@ contamination objection actually applies.
 1. Does per-window encoder retraining (twelve GPU fine-tunes) close any of the out-of-period gap,
    or is the era-specificity fundamental? Out of scope for the current timeline; the design is
    specified.
-2. Answered (Part V): call tone does not survive the filing-level test, in 2025 or across the
-   2018–2024 backtest, at any of the eight horizons, while remaining informative at the call
+2. Answered (Part V): call tone does not survive the filing-level test, in 2025 or across either
+   backtest window, at any of the eight horizons, while remaining informative at the call
    anchor. The open follow-on is whether a shorter call-to-anchor gap (for example a mid-quarter
    anchor) recovers the signal. The horizon sweep now gives that follow-on a target: the
    call-anchored effect peaks at ten to twenty days, so a mid-quarter anchor should be paired with

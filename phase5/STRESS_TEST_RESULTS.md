@@ -482,8 +482,9 @@ unconditional text increment peak at *different* windows, which is the substance
 
 **`f4_abn_intensity` is downgraded and should no longer be reported as a finding.** It was the only
 p < 0.05 cell in the Stage E conditioning table (−0.012, p=0.037 at 30d). Across the other seven
-windows it is −0.001, −0.005, −0.008, −0.009, −0.007, +0.002, +0.013 — none significant, none
-larger than 0.013, and the sign flips positive at both ends. No neighbouring window supports it.
+windows, in ascending order 3/5/7/10/20/60/90d, it is +0.013, −0.007, −0.009, −0.008, −0.005,
+−0.001, +0.002 — none significant, none larger than 0.013, and the sign flips positive at both
+ends. No neighbouring window supports it.
 A single significant cell in a family that is null at every adjacent window is the signature of a
 lone-window fluke, and the window sweep is exactly the test that distinguishes the two cases. The
 interpretation previously attached to it (abnormal intensity as an already-firing transmission
