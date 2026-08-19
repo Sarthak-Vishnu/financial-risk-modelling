@@ -1,26 +1,3 @@
-"""Shared reader for the committed validation-2025 grid.
-
-WHY THIS EXISTS. The two encoder-grid figures used to carry their numbers as literals
-transcribed from the write-up's table. That was defensible while the grid lived only in
-prose, and it is what let them drift: when the grid was regenerated and gained four rows,
-the figures kept plotting the superseded ones, including two conditions whose names had
-changed. The grid is a committed artefact now
-(phase5/out/stress_grid_val2025_fixed.json), so the figures read it and cannot disagree
-with it.
-
-WHAT IS STILL EDITORIAL AND THEREFORE STILL LIVES HERE. Two things the JSON does not
-know:
-
-  * which of its conditions belong in a figure ABOUT ENCODERS. The grid also carries the
-    non-text anchors and the disclosure-change lanes, which belong to other tables.
-  * which family each encoder falls into. That grouping is an argument about what the
-    encoders were trained to do, not a fact recorded anywhere in the run.
-
-Both are declared below as explicit mappings. Neither silently skips: a condition in the
-JSON that no rule covers raises, so a future encoder added to stress_grid.py surfaces as
-a loud failure here rather than as a row quietly missing from a figure.
-"""
-
 import json
 import re
 from pathlib import Path
@@ -92,7 +69,6 @@ NON_ENCODER_FAMILY = {
 _EVERYTHING = re.compile(r"^EVERYTHING ")
 _ENC = re.compile(r"enc\[([A-Za-z0-9_]+)")
 
-
 def _family_of(name):
     if _EVERYTHING.match(name):
         return FUSION
@@ -110,19 +86,11 @@ def _family_of(name):
         return ENCODER_FAMILY[enc]
     return None
 
-
 def _head_of(name):
-    """'[ridge]' / '[hgb]' / '[sparse]' — used only for stable tie-breaking."""
     m = re.search(r"\[(ridge|hgb|sparse)\]\s*$", name)
     return m.group(1) if m else ""
 
-
 def load_grid():
-    """Every row of the committed grid, keyed by condition name.
-
-    Values carry ic, ci_lo, ci_hi, r2 and dm_p. dm_p is None for the reference row,
-    which has nothing to be tested against.
-    """
     with open(GRID_JSON) as fh:
         doc = json.load(fh)
     out = {}
@@ -142,13 +110,7 @@ def load_grid():
             raise ValueError(f"{GRID_JSON} has no {required!r} row")
     return out
 
-
 def encoder_conditions(grid=None):
-    """The grid's encoder conditions, each tagged with its family.
-
-    Raises if any condition in the JSON is neither excluded nor placed in a family, so a
-    new encoder cannot enter the grid and quietly miss the figures.
-    """
     grid = grid if grid is not None else load_grid()
     kept, unplaced = [], []
     for name, row in grid.items():
@@ -167,9 +129,7 @@ def encoder_conditions(grid=None):
         )
     return kept
 
-
 def by_family(grid=None):
-    """[(family title, [rows])] in FAMILY_ORDER, each family's rows sorted by IC."""
     rows = encoder_conditions(grid)
     groups = []
     for fam in FAMILY_ORDER:
@@ -182,13 +142,7 @@ def by_family(grid=None):
         raise ValueError(f"FAMILY_ORDER omits a family: placed {placed} of {len(rows)} rows")
     return groups
 
-
 def noise_halfwidth(grid=None):
-    """Half-width of the reference condition's own bootstrap interval.
-
-    The single-year noise scale used to be the rounded +/-0.06 quoted in the text. The
-    grid records the interval itself, so it is measured here instead of quoted.
-    """
     grid = grid if grid is not None else load_grid()
     ref = grid[REFERENCE]
     return (ref["ci_hi"] - ref["ci_lo"]) / 2.0

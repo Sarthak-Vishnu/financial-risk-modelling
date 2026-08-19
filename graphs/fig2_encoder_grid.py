@@ -7,29 +7,6 @@
 # two, which is a tie and not a win: no condition's interval lies clear of the dashed
 # line, and every interval overlaps it.
 
-"""Figure 2 -- the encoder grid as a point-and-interval plot (thesis Section 4.2).
-
-Why a figure at all: the chapter's central negative claim is that nothing beats the
-count model, and it currently arrives as a long table the reader has to scan and hold in
-memory. A reference line turns that into one glance.
-
-The intervals are the second reason. Section 4.1 states in prose that the interval spans
-roughly +/- 0.06, which is why single-year differences of 0.01 to 0.02 can never be
-conclusive. Drawing the intervals shows it instead of asserting it: every bar straddles
-the reference line, so the plot makes the case for moving to multi-year paired tests
-before the reader reaches Section 4.3.
-
-Rows are sorted by IC, best at the top, so the reading is top-down.
-
-NUMBERS ARE READ FROM THE COMMITTED GRID at phase5/out/stress_grid_val2025_fixed.json,
-through graphs/_grid.py, and are not literals here. They were literals transcribed from
-the write-up until the grid became a committed artefact; that is what let this figure
-drift out of step with it. Which conditions belong in an encoder figure is still an
-editorial choice and still lives in _grid.py, where an uncovered condition raises rather
-than vanishing from the plot. R^2_log is deliberately not drawn: it is a third axis the
-plot has no room for, and it survives in the appendix version of the table.
-"""
-
 import matplotlib.pyplot as plt
 
 from _grid import REFERENCE, STRUCTURED, encoder_conditions, load_grid
@@ -49,12 +26,10 @@ SHORT_LABELS = True
 # short or rows are tall, and here neither holds. Set to 25 to see it.
 LABEL_ROTATION = 0
 
-
 def label_for(name):
     if SHORT_LABELS and name.startswith("struct+"):
         return name[len("struct+"):]
     return name
-
 
 def main():
     apply_style()
@@ -120,7 +95,6 @@ def main():
               bbox_to_anchor=(0.0, -0.32 * 5.4 / height), ncol=1)
 
     save(fig, "fig2_encoder_grid", exact_width=False)
-
 
 if __name__ == "__main__":
     main()

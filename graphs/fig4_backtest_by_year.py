@@ -5,27 +5,6 @@
 # reason the increment's significance resolves by shortening the measurement window rather
 # than by accumulating further evaluation years.
 
-"""Figure 4 -- the backtest year by year (thesis Section 4.3.1).
-
-Why a figure at all: Table 4.3 reports a mean IC and a t-statistic, and the prose says
-the t-statistic "measures the consistency of the ranking skill". Consistency is a
-property of a series, and the series is never shown. This figure shows it.
-
-It also supports a claim the chapter leans on twice with no visual backing: that 2020 is
-a regime break large enough to dominate the year-to-year variance of the thirty-day
-panel. Section 4.3.4 uses exactly that to explain why the text increment reaches
-significance by shortening the window rather than by adding evaluation years.
-
-DATA STATUS: not available. The per-year series is in the cluster logs and is not reproduced here. Paste the
-yearly ICs into SERIES below and the script will run.
-
-The check_against_table_43 guard is the reason this is worth doing carefully rather
-than quickly. It recomputes the mean and the t-statistic from whatever series you paste
-and compares them against the published Table 4.3 values. A transcription slip in
-twelve hand-copied numbers is close to undetectable by eye, and would put a figure into
-the thesis that contradicts a table three pages earlier.
-"""
-
 import math
 
 import matplotlib.pyplot as plt
@@ -73,16 +52,13 @@ TABLE_43 = {
 
 REGIME_YEAR = 2020
 
-
 def mean_and_t(values):
     n = len(values)
     mean = sum(values) / n
     var = sum((v - mean) ** 2 for v in values) / (n - 1)
     return mean, mean / (math.sqrt(var / n))
 
-
 def check_against_table_43(lane, values):
-    """Recompute Table 4.3 from the pasted series. Warn loudly on disagreement."""
     if lane not in TABLE_43:
         return
     windows = {"2018-2024": [v for y, v in zip(YEARS, values) if y >= 2018],
@@ -93,7 +69,6 @@ def check_against_table_43(lane, values):
         flag = "ok " if ok else "MISMATCH"
         print(f"  [{flag}] {lane:<24s} {label}  "
               f"IC {ic:.3f} (table {ic_ref:.3f})   t {t:.1f} (table {t_ref:.1f})")
-
 
 def main():
     populated = {k: v for k, v in SERIES.items() if v}
@@ -139,7 +114,6 @@ def main():
     # A narrow panel has no interior space that the series do not cross, so the
     # legend goes under the axes there rather than on top of the data.
     save(fig, NAME)
-
 
 if __name__ == "__main__":
     main()

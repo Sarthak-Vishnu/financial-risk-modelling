@@ -8,25 +8,6 @@
 # largest at seven days and falls to zero by sixty, even though all three models predict
 # better as the window gets longer.
 
-"""Figure 1 -- the term structure of the text increment (thesis Section 4.3.4).
-
-Why a figure at all: Section 4.3.4 states three findings and every one of them is a
-statement about shape. The ranking holds at every window (upper panel, no crossings),
-the increment is single-peaked rather than monotonic (lower panel), and significance
-appears at the short end (filled markers). A reader currently reconstructs all three
-from a six-column table.
-
-The upper panel is doing more than setting context. It carries the explanation the
-prose has to spell out: predictability climbs as the window lengthens, because longer
-realised-volatility windows are smoother and increasingly dominated by the persistent
-component the structured block already measures. That is why the increment falls even
-as every curve rises.
-
-NUMBERS ARE EMBEDDED LITERALS, taken from the window-spectrum results table. They
-are not recomputed here. If the table changes, change them here too: a figure that
-silently disagrees with its own table is worse than no figure.
-"""
-
 import matplotlib.pyplot as plt
 
 from _style import (C, TEXTWIDTH_IN, apply_style, save, window_axis,
@@ -41,7 +22,6 @@ DELTA = [0.021, 0.023, 0.027, 0.020, 0.020, 0.016, -0.001, -0.005]
 PVALUE = [0.020, 0.017, 0.014, 0.076, 0.119, 0.098, 0.851, 0.477]
 
 ALPHA = 0.05
-
 
 def main():
     apply_style()
@@ -96,7 +76,6 @@ def main():
 
     window_axis(ax2, WINDOWS)
     save(fig, "fig1_window_spectrum")
-
 
 if __name__ == "__main__":
     main()

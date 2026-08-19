@@ -9,29 +9,6 @@
 # filings over six quarters rather than the 152 over seven quarters behind the filled 
 # markers, because a forward window that long runs past the end of the price data for the
 # final quarter's calls.
-"""Figure 3 -- the three effects do not peak over the same window (thesis Section 4.6.1).
-
-Why a figure at all: this is the most interesting result in the chapter and the only
-one with no exhibit. The argument in Section 4.6.1 is explicitly about shape, and it
-ends "Were the shared mechanism simply that more text signal is better, all three
-curves would peak together. They do not." Right now the reader has to assemble three
-series from prose scattered across three sections and compare them mentally.
-
-WHY THREE PANELS AND NOT ONE. The call-anchored effect reaches +0.142 while the 10-K
-increment tops out at +0.027. On a shared axis the 10-K curve is a flat line and the
-figure argues the opposite of what the text says. Separate panels with separate scales
-are the honest presentation, because the claim is about the location of each peak, not
-its height. Normalising each series to its own maximum would also work, but several
-values are negative, which makes that scaling hard to read.
-
-WHY TWO MARKERS IN THE MIDDLE PANEL. The call-anchor sweep is not one sample. Six of
-its eight windows rest on 152 filings across seven quarters; the sixty- and ninety-day
-windows rest on 139 across six, because a forward window that long runs off the end of
-the price data for the last quarter's calls. Both long windows are negative, so the
-sample change coincides exactly with the sign change, and drawing them identically
-would invite a reader to attribute to the window something that may belong to the
-sample. Hollow markers say "measured differently" without demoting the points.
-"""
 
 import matplotlib.pyplot as plt
 
@@ -55,7 +32,6 @@ PANELS = [
     ("Call tone, call anchor",  CALL_ANCHOR,  C["vermillion"], CALL_REDUCED_SAMPLE),
     ("Insider disagreement",    DISAGREEMENT, C["green"],      set()),
 ]
-
 
 def main():
     apply_style()
@@ -98,7 +74,6 @@ def main():
     axes[-1].set_xlabel("Measurement window (trading days)")
     window_axis(axes[-1], WINDOWS)
     save(fig, "fig3_three_peaks")
-
 
 if __name__ == "__main__":
     main()
