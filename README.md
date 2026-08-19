@@ -53,32 +53,28 @@ datasets/
 
 ---
 
-## TODO Ahead
+## Running the pipeline
 
-Status: the multimodal redesign (`new_plan.md`) is largely done — Stage A (structured baseline beats the
-old TF-IDF floor: 0.570 > 0.545), Stage D (text adds on top: `struct+TF-IDF` 0.611 / R²_log 0.276), and
-Stage B (vol-aware encoder delivered; clean negative — 0.586 vs similarity-trained 0.602, task is lexically
-saturated). Full narrative + numbers in `study.md`. What remains, in priority order:
+The pipeline runs in stages, each with the entry point below. `MODEL_CARD.md` (Section 8)
+gives the full configuration and the reproducibility controls (seeds, thread pinning).
 
-1. **Topic → volatility interpretability analysis (recommended next — high mark value, no new data).**
-   Rank the ~49 BERTopic risk topics by how much each drives the cross-section of forward volatility
-   (topic-loading coefficients / per-topic IC); produce a "top volatility-driving risk themes" table with
-   each topic's top words. This is the thesis's "predict **and explain**" novelty — the contribution TF-IDF
-   cannot provide. Runs on artifacts already on disk (`topics/out/filing_topic_vectors_*.parquet`).
+| Stage | Entry point |
+|-------|-------------|
+| 1. Chunk the Item 1A corpus for MLM | `python dapt/chunk_corpus.py --paragraph_aware --out_dir dapt_data_para` |
+| 2. Domain-adaptive pretraining (DAPT) | `sbatch dapt/run_dapt_para.sh` |
+| 3. Build contrastive pairs | `contrastive/run_build_pairs.sh` |
+| 4. Contrastive fine-tuning | `contrastive/run_contrastive.sh` |
+| 5. Vol-aware contrastive encoder | `contrastive/run_volaware.sh` |
+| 6. Supervised volatility fine-tune | `contrastive/run_finetune_vol.sh`, `contrastive/run_ftvol2018.sh` |
+| 7. Encode the corpus into filing vectors | `topics/run_encode.sh`, `topics/run_encode_three.sh` |
+| 8. Fit BERTopic models | `topics/run_topics.sh` |
+| 9. Intrinsic evaluation (FinMTEB) | `contrastive/run_finmteb.sh` |
+| 10. Downstream grid + expanding-window backtests | `phase5/run_stress.sh` |
+| 10b. Downstream grid only (single forward split) | `phase5/run_val2025.sh` |
 
-2. **Firm up statistical significance of the headline.** `struct+TF-IDF` beats `structured` by +0.050 IC in
-   the 2018–2024 backtest but at p=0.090. Extend test years / add bootstrap CIs + paired tests
-   (`eval_common.bootstrap_ci`, `paired_year_test`) to push the incremental-text claim below 0.05 and make
-   it bulletproof.
+DAPT-stage detail is in `dapt/README_dapt.md`. To regenerate the result figures, run each
+`graphs/fig*.py`, which writes a vector PDF and a PNG.
 
-3. **Stage C — earnings-call confirmation (optional upside; costs collection time).** The call-anchored
-   gate showed tone adds **+0.039 IC** in combination (`phase5/call_combined_gate.py`). Collect the 406
-   pre-filing 2025 calls (`dataset_collection_discussion/calls_collection_spec_2025.md`), rebuild features
-   (`build_call_features.py`), re-run `run_fusion.py`; backfill 2006–2024 **only if** they add at the filing
-   level. Do this only with schedule slack.
-
-4. **Write-up / consolidation.** Lock the final results tables + figures (ablation ladder, backtest, topic
-   interpretability) into the dissertation methods/results. Marks come from the written analysis, not more
-   experiments — the science is already a strong, defensible positive.
-
-**Recommended order:** 1 → 2 → (4, start writing) → 3 if time allows.
+> **Reproducibility.** Training uses seed 42. The downstream grid reproduces bit-for-bit only
+> with every thread pool pinned to 1 on a fixed CPU; `phase5/run_val2025.sh` enforces this.
+> See `MODEL_CARD.md` Section 8.
