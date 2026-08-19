@@ -1,4 +1,3 @@
-# Datasets — stored on HuggingFace, not git
 datasets/
 *.csv
 *.parquet
@@ -17,19 +16,13 @@ topics/data/
 topics/models/
 topics/out/
 baselines/out/
-# phase5/out stays excluded, with a narrow exception for the canonical val-2025 grid: the
-# write-up's encoder table is rebuilt from stress_grid_val2025_fixed.json directly rather than
-# from transcribed figures, so that file is tracked. Everything else under phase5/out/ remains
-# ignored, including the .PREV.json backup that run_val2025.sh writes.
 phase5/out/*
 !phase5/out/stress_grid_val2025_fixed.json
 
-# Python
 __pycache__/
 *.pyc
 .env
 
-# VSCode
 .vscode/
 
 eval_results/

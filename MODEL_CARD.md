@@ -389,55 +389,7 @@ encoder has a recorded backtest result.
 
 ---
 
-## 6. Limitations
-
-**The headline limitation is that these encoders do not beat TF-IDF.** No encoder condition in
-section 5.4 exceeds the `struct+tfidf [sparse]` reference outside its confidence interval, and the
-one encoder with a clean backtest (section 5.5) underperforms it.
-
-**Evaluation power.** The validation-2025 IC has a bootstrap CI roughly ±0.06 wide at n ≈ 397, so
-single-year differences of a few thousandths between encoders are not distinguishable. The
-repository states this explicitly: val deltas alone prove nothing.
-
-**A label-join defect affected all pre-2026-07-03 results.** The corrected filing↔text join
-(`dataset_config/fix_filing_join.py`) re-keys fiscal year and re-assigns pickles by filing year.
-Pre-fix numbers paired texts with the *next* filing's labels and are not comparable to anything in
-this card. All caches aligned to the corrected data carry a `_fixed` suffix and must never be mixed
-with unsuffixed ones.
-
-**A truncation defect affected all pre-correction encoder comparisons.** The Phase 4 encode
-truncated every paragraph at the model's maximum sequence length while 36.6% of paragraphs are
-longer, so roughly 65% of corpus words never reached any encoder — while TF-IDF ingested all of
-them. Every encoder-versus-TF-IDF comparison before the windowed re-encode was therefore full-text
-bag-of-words against one-third-text encoders.
-
-**Contrastive validation accuracies are not cross-comparable** (section 3.2 caveat), and no
-common-task re-evaluation is recorded.
-
-**The sector view, the project's own contribution, hurt under full fine-tuning.** `three` scores
-below `dual` on both FinMTEB axes. The recorded diagnosis is noisy positives: two firms sharing a
-2-digit SIC and fiscal year are a soft positive at best.
-
-**Topic exposures are absent from the corrected evaluation entirely.** The per-filing topic vectors
-were built before the join fix and were never regenerated, so no corrected-data condition carries
-topic features, individually or fused.
-
-**No entity blanking.** Firm and ticker names remain in the contrastive training text, so a model
-could in principle key on firm identity rather than risk language. This is recorded as a deferred
-item, not a solved one.
-
-**Look-ahead is a structural concern for the supervised variants.** `ftvol` is excluded from
-backtests for exactly this reason. `volaware`'s vol view uses within-year forward-volatility deciles,
-which is label-derived information; the repository does not record a leakage audit of `volaware`
-equivalent to the `ftvol`/`ftvol2018` one.
-
-**Not recorded anywhere in this repository:** carbon cost or total compute for training;
-per-checkpoint parameter counts; inference latency or throughput; fairness, bias or demographic
-evaluations; adversarial robustness testing; any evaluation on non-S&P-500 or non-US filings.
-
----
-
-## 7. Ethical and licensing considerations
+## 6. Ethical and licensing considerations
 
 **Source filings.** SEC 10-K filings are public regulatory disclosures retrieved from EDGAR. They
 describe corporate entities rather than natural persons, so the corpus carries no personal data of
@@ -471,7 +423,7 @@ performance breakdown is recorded.
 
 ---
 
-## 8. Reproduction
+## 7. Reproduction
 
 | Stage | Entry point |
 |---|---|

@@ -55,7 +55,7 @@ datasets/
 
 ## Running the pipeline
 
-The pipeline runs in stages, each with the entry point below. `MODEL_CARD.md` (Section 8)
+The pipeline runs in stages, each with the entry point below. `MODEL_CARD.md` (Section 7)
 gives the full configuration and the reproducibility controls (seeds, thread pinning).
 
 | Stage | Entry point |
@@ -77,4 +77,4 @@ DAPT-stage detail is in `dapt/README_dapt.md`. To regenerate the result figures,
 
 > **Reproducibility.** Training uses seed 42. The downstream grid reproduces bit-for-bit only
 > with every thread pool pinned to 1 on a fixed CPU; `phase5/run_val2025.sh` enforces this.
-> See `MODEL_CARD.md` Section 8.
+> See `MODEL_CARD.md` Section 7.
