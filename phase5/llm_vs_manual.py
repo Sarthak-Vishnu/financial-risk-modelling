@@ -10,7 +10,7 @@ Three conditions, ONE head, ONE set of folds (the head-fairness rule from the st
 Condition 3 beating condition 2 would mean hand-crafted feature engineering was the bottleneck.
 Condition 3 failing to beat condition 1, as condition 2 already does (Stage E level test: null on
 all four arms), would mean the bottleneck is the information content of the Form 4 record itself,
-which is the prior stated in study_extended.md VII.5.
+which is this study's prior.
 
 Design: 5-fold CV within each filing year, identical fold assignment across every condition so
 each comparison is paired. This is the same admissible design call_filing_gate.py uses, for the

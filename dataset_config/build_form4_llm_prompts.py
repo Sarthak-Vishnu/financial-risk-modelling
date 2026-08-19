@@ -14,7 +14,7 @@ reimplemented, so the two lanes cannot drift apart on parsing.
 SCOPE: filing years 2024 and 2025 only (~865 filings). Both post-date the training cutoffs of the
 open-weights candidates (Qwen2.5 and Llama-3.1 are both late-2023), so look-ahead is controlled by
 construction rather than by argument. This is the whole reason the pilot is defensible at this
-size; do not widen it without re-reading study_extended.md VII.5.
+size; do not widen it without revisiting the contamination argument.
 
 ANONYMISATION (RISK_LLM_ANON=1, the default). Glasserman & Lin (2023) show that overlapping the
 model's training window with the backtest period biases results through two channels at once —

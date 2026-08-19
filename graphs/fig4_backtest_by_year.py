@@ -16,8 +16,7 @@ a regime break large enough to dominate the year-to-year variance of the thirty-
 panel. Section 4.3.4 uses exactly that to explain why the text increment reaches
 significance by shortening the window rather than by adding evaluation years.
 
-DATA STATUS: not available. The per-year series is in the cluster logs and appears
-neither in thesis.tex nor in study_extended.md, so nothing is filled in here. Paste the
+DATA STATUS: not available. The per-year series is in the cluster logs and is not reproduced here. Paste the
 yearly ICs into SERIES below and the script will run.
 
 The check_against_table_43 guard is the reason this is worth doing carefully rather

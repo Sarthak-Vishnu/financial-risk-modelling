@@ -36,8 +36,8 @@
 # Round 8 — bounded generative-LLM pilot (Prof Ma, 2026-08-04). Form 4 windows -> Qwen2.5-7B
 # score -> compared against the eight hand-crafted f4_* features under one head and one set of
 # folds. Scope is the 2024+2025 filings only, which post-date the model's training cutoff, so
-# look-ahead is controlled by construction. See study_extended.md VII.5 for why the scope is not
-# negotiable, and phase5/llm_vs_manual.py for the stopping rule.
+# look-ahead is controlled by construction. See phase5/llm_vs_manual.py for the scope
+# rationale and the stopping rule.
 #
 # Submit from the repo root:  sbatch phase5/run_llm_form4.sbatch
 # PREREQUISITE: the model must already be in the HF cache. GPU nodes may have no outbound

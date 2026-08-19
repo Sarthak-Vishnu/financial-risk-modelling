@@ -3,7 +3,7 @@ Round 8 — score the anonymised Form 4 windows with an open-weights generative 
 
 One prompt per filing (build_form4_llm_prompts.py), K independent samples each. The K samples are
 the point as much as the score is: their spread is this study's own measurement of the score
-instability that study_extended.md VII.5 currently asserts from the literature (Sclar et al. 2024,
+instability that the literature asserts (Sclar et al. 2024,
 Ouyang et al. 2024). An assertion backed by a number on our own data is worth more than one backed
 only by citations.
 

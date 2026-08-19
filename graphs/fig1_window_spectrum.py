@@ -22,7 +22,7 @@ realised-volatility windows are smoother and increasingly dominated by the persi
 component the structured block already measures. That is why the increment falls even
 as every curve rises.
 
-NUMBERS ARE EMBEDDED LITERALS, taken from Table 4.5 (tab:horizon) of thesis.tex. They
+NUMBERS ARE EMBEDDED LITERALS, taken from the window-spectrum results table. They
 are not recomputed here. If the table changes, change them here too: a figure that
 silently disagrees with its own table is worse than no figure.
 """
