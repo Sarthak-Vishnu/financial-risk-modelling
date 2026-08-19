@@ -403,19 +403,10 @@ fundamentals are third-party datasets with their own licences. **No licence term
 conditions or entitlement records for any of them are recorded in this repository.** CRSP and
 Compustat are accessed through WRDS, which is normally an institutional subscription with
 redistribution restrictions — meaning the derived label and feature tables may not be freely
-redistributable. This must be checked against the actual entitlement before any dataset release.
-The yfinance fallback used for two tickers has its own terms of use, also not recorded here.
+redistributable.
 
 **Base model and dependencies.** `sentence-transformers/all-mpnet-base-v2` and
-`BAAI/bge-base-en-v1.5` are third-party models with their own licences. Neither licence is recorded
-in this repository. There is no `LICENSE` file at the repository root and no licence declared for
-the code or the derived checkpoints.
-
-**Foreseeable misuse.** A model that ranks firms by forecast volatility from their own disclosure
-text creates an incentive to write risk-factor sections that score favourably rather than that
-disclose accurately. Deployed at scale on a disclosure channel that firms control, it would be
-gameable by construction. The study evaluates ranking accuracy and does not evaluate robustness to
-strategic disclosure.
+`BAAI/bge-base-en-v1.5` are third-party models with their own licences.
 
 **Fairness.** The universe is large-cap US firms. Nothing here evidences behaviour on smaller
 issuers, non-US filers, or firms in sectors thinly represented in the S&P 500. No subgroup

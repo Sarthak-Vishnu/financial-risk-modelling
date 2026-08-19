@@ -16,8 +16,7 @@ topics/data/
 topics/models/
 topics/out/
 baselines/out/
-phase5/out/*
-!phase5/out/stress_grid_val2025_fixed.json
+phase5/out/
 
 __pycache__/
 *.pyc
