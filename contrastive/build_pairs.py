@@ -15,7 +15,7 @@ cues, and generates positive pairs for three contrastive views:
 All pairs are built from the TRAIN split only (filing_date < 2025-01-01); 2025 filings
 are emitted as val units (monitoring) but not paired. Test filings (>= 2026) are excluded.
 
-Normalisation (shortcut prevention, Literature_agent_phase3.md Q2):
+Normalisation (shortcut prevention):
   numbers -> [NUM] (SEC-BERT-NUM), dates -> [DATE]. Firm/ticker blanking is left OFF by
   default: naive ticker string-replace mangles common-word tickers (e.g. "A", "ALL", "IT");
   proper probabilistic entity blanking is deferred to Increment 2.

@@ -56,4 +56,4 @@ date +"start %F %T"
 python phase5/stress_grid.py --mode val2025
 date +"end   %F %T"
 
-echo "=== DONE. Diff against $PREV before editing STRESS_TEST_RESULTS.md ==="
+echo "=== DONE. Diff against $PREV. ==="

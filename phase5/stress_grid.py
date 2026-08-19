@@ -26,7 +26,7 @@ tfidf+lag was 0.541 until 2026-08-12. Both figures are correct for the corrected
 differ only in the sparse-ridge penalty: 0.541 is the fixed alpha=10 result, 0.508 is what this
 harness produces when alpha is tuned on 2024 over SPARSE_ALPHAS and selects 30. The anchor was
 therefore checking tuned output against a fixed-alpha reference and firing DRIFT on every run.
-STRESS_TEST_RESULTS.md records both side by side ("tfidf+lag 0.508 tuned vs 0.541 at fixed
+Both are recorded side by side ("tfidf+lag 0.508 tuned vs 0.541 at fixed
 alpha=10"). 0.508 is the figure this code path actually computes, so it is the one anchored.
 
 Output: phase5/out/stress_grid_<mode>*.json + printed tables.

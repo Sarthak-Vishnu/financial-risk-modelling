@@ -23,7 +23,7 @@ A zero-trade window for a firm with Form 4 history is a valid observation (count
 ratios NaN); firms absent from the Form 4 universe get all-NaN rows.
 
 Source: datasets/form4/form4_transactions.csv — SEC insider-transactions structured flat files
-(collection documented in dataset_collection_discussion/data_collection_readme.md; 1.67M rows,
+(1.67M rows,
 645 S&P 500 firms, 2006-2025).
 
 Filings are matched to issuers by CIK first (stable across ticker renames — the P0-a lesson),

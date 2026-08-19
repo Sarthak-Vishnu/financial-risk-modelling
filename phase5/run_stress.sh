@@ -42,4 +42,4 @@ python phase5/stress_grid.py --mode backtest --test-start 2018
 echo "=== E3: backtest 2013-2024 (primary significance lens) ==="
 python phase5/stress_grid.py --mode backtest --test-start 2013
 
-echo "=== DONE. Results in phase5/out/stress_grid_*.json — fill phase5/STRESS_TEST_RESULTS.md ==="
+echo "=== DONE. Results in phase5/out/stress_grid_*.json ==="

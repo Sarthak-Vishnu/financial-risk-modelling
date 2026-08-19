@@ -65,4 +65,4 @@ echo "--- paragraph-aware on dapt_data_para/val.jsonl ---"
 python dapt/eval_perplexity.py --model_path dapt_checkpoints_para/best --val_file dapt_data_para/val.jsonl
 
 echo ""
-echo "=== DONE. Report the lines above back to populate CHUNKING_COMPARISON.md ==="
+echo "=== DONE. Validation perplexity and chunk statistics are reported above. ==="

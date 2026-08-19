@@ -6,7 +6,7 @@ in-batch-negatives objective over the pairs built in Increment 1. Implemented as
 PyTorch loop (not the stock SentenceTransformer Trainer) because the loss needs per-example
 (sic2, fiscal_year, view) metadata for:
 
-  - Label-aware false-negative masking (Khosla 2020, Literature_agent_phase3.md Q3): for each
+  - Label-aware false-negative masking (Khosla 2020): for each
     anchor, in-batch items sharing its (sic2, fiscal_year) are masked out of the negative set —
     they are neither the positive nor a valid negative. Default MNRL would push them apart.
   - Per-view weighting (Q1): soft sector positives are down-weighted (lambda_sector < 1).

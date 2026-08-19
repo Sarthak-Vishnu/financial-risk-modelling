@@ -2,8 +2,7 @@
 Stage C — FILING-LEVEL confirmation gate (pre-filing 2025 calls).
 
 The call-anchored pilot (call_combined_gate.py) showed call tone adds +0.039 IC over the structured
-block when predicting post-CALL 30d volatility. This script runs the confirmation that
-dataset_collection_discussion/calls_collection_spec_2025.md pre-registered: after collecting, for
+block when predicting post-CALL 30d volatility. This script runs the pre-registered confirmation: after collecting, for
 each 2025 10-K, the annual/Q4 earnings call that PRECEDES the filing, test whether call tone adds
 signal at the FILING level — predicting the same post-filing 30-day forward volatility the whole
 study targets.
@@ -148,7 +147,7 @@ def main():
           f"({matched.mean():.0%}) | tone features: {tone}")
     if matched.sum() < 100:
         print("[warn] fewer than 100 matched calls — the pre-filing collection has probably not "
-              "landed yet (see dataset_collection_discussion/calls_collection_spec_2025.md).")
+              "landed yet.")
 
     run_population(p, y, scols, tone, "FULL 2025 panel (tone missing where no call)")
     pm = p[matched].reset_index(drop=True)
