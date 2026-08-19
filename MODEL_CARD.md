@@ -4,15 +4,16 @@ Encoders trained in this project for predicting forward realised volatility from
 (Item 1A) section of SEC 10-K filings. Covers the domain-adaptively pretrained model, the three
 contrastive variants built on it, and the two task-aligned (volatility-supervised) variants.
 
-Every figure below is taken from a file in this repository — a `train_summary.json`, a SLURM log, a
-results JSON, or a committed markdown record. Where a field is conventionally expected in a model
-card but is not recorded anywhere in this repository, it says so explicitly rather than being
-filled with a plausible value.
-
-**Status.** These encoders are research artifacts from a dissertation study. The study's own
-headline finding is that none of them beats a count-based TF-IDF representation on the downstream
-volatility task (see *Downstream evaluation*). They are released as the record of a negative
-result, not as recommended volatility models.
+**Environment.** The `diss` conda environment (`environment.yml`, `requirements.txt`); FinMTEB runs in a
+separate `finmteb` environment. Seed 42 is set for contrastive training and for the TF-IDF→SVD
+projection. The downstream grid is reproducible, but only when both the thread count and the CPU are
+held fixed. `phase5/run_val2025.sh` therefore pins every thread pool to 1 and constrains the job to
+`damnii07`; run on that configuration, the grid reproduces bit-for-bit on IC and on both bootstrap
+CI bounds, and R²_log and the DM p-value agree to within 7.4e-06 and 5.0e-04 respectively. Relax
+either control and the tree-head lanes move by up to 0.018 IC, with the SVD-projected ridge lane
+moving 0.011 — enough to reorder encoders and to carry a DM p-value across a conventional
+threshold. Seeds are not the issue; everything is seeded. Both controls are requirements, not
+preferences.
 
 ---
 
@@ -82,7 +83,6 @@ from three sources in priority order:
 
 1. FINSABER S&P 500 price file (2000-2024, including delisted names) — 4,736,109 rows
 2. WRDS CRSP daily returns for 2025 — 159,092 rows
-3. yfinance fallback for two tickers with no CRSP link
 
 ### 2.3 Temporal split
 
@@ -135,7 +135,7 @@ Continued masked-language-model pretraining following Gururangan et al. (2020).
 | Weight decay | 0.01 |
 | Precision | fp16 |
 | Early stopping | patience 2, on validation loss |
-| Hardware | 1× NVIDIA RTX A6000 (SLURM job 3508515) |
+| Hardware | 1× NVIDIA RTX A6000 |
 
 Both chunking variants used identical hyperparameters, so chunking was the only varying factor.
 
@@ -243,7 +243,7 @@ representations outperform these learned encoders on that task.
 ### 5.1 Intrinsic — FinMTEB
 
 FinMTEB (Tang & Yang 2025), English subset: 2 STS tasks scored by Spearman ρ and 10 retrieval tasks
-scored by NDCG@10. Run by `contrastive/eval_finmteb.py`, SLURM job 3511784, ~49 minutes on an A6000.
+scored by NDCG@10. Run by `contrastive/eval_finmteb.py`, ~49 minutes on an A6000.
 The optional 7B `Fin-E5` baseline and the Chinese tasks were skipped.
 
 | Model | FinSTS | FINAL | FiQA2018 | Apple10K | FinQA | FinanceBench | HC3 | TATQA | TheGoldmanEn | TradeTheEventEncy | USNews | TradeTheEventNews | MEAN |
@@ -302,9 +302,7 @@ and therefore saw ~22% more gradient steps over the same 5 epochs.
 Each encoder's mean-pooled filing embedding added on top of the structured financial baseline, under
 a ridge and a histogram gradient-boosted tree head. Metric is within-year cross-sectional Spearman
 IC on validation 2025 (n = 393), with a bootstrap 95% CI, R² on the log level, and a Diebold-Mariano
-p-value against the `struct+tfidf [sparse]` reference. From
-`phase5/out/stress_grid_val2025_fixed.json`, computed on the P0-corrected data, run of
-2026-08-12 04:24–05:23.
+p-value against the `struct+tfidf [sparse]` reference.
 
 | Condition | IC | 95% CI | R²_log | DM p vs ref |
 |---|---|---|---|---|
@@ -429,14 +427,3 @@ performance breakdown is recorded.
 | FinMTEB | `contrastive/run_finmteb.sh` |
 | Downstream grid + backtests | `phase5/run_stress.sh` |
 | Downstream grid only | `phase5/run_val2025.sh` |
-
-Environment: the `diss` conda environment (`environment.yml`, `requirements.txt`); FinMTEB runs in a
-separate `finmteb` environment. Seed 42 is set for contrastive training and for the TF-IDF→SVD
-projection. The downstream grid is reproducible, but only when both the thread count and the CPU are
-held fixed. `phase5/run_val2025.sh` therefore pins every thread pool to 1 and constrains the job to
-`damnii07`; run on that configuration, the grid reproduces bit-for-bit on IC and on both bootstrap
-CI bounds, and R²_log and the DM p-value agree to within 7.4e-06 and 5.0e-04 respectively. Relax
-either control and the tree-head lanes move by up to 0.018 IC, with the SVD-projected ridge lane
-moving 0.011 — enough to reorder encoders and to carry a DM p-value across a conventional
-threshold. Seeds are not the issue; everything is seeded. Both controls are requirements, not
-preferences.
